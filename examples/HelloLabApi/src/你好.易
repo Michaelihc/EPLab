@@ -1,0 +1,20 @@
+.版本 2
+.扩展 CLR 1
+.扩展 LabAPI 1
+
+.引用命名空间 LabApi.Events.Arguments.PlayerEvents
+.引用命名空间 LabApi.Events.Handlers
+
+.LabAPI插件 主程序集
+.插件名称 “你好，EPLab！”
+.插件说明 “玩家加入时，在服务器日志里说你好。”
+.插件作者 “EPLab”
+.插件版本 “1.0.0”
+.订阅事件 PlayerEvents.Joined, 玩家加入
+
+.程序集 主程序集, , 公开
+
+.子程序 玩家加入, , 公开
+.参数 事件, PlayerJoinedEventArgs
+
+日志.信息（$“你好，{事件.Player.Nickname}！”）

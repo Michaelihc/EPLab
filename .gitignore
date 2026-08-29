@@ -1,0 +1,8 @@
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+
+# Cement's private SpinBot engine-edge sources are used only for local validation.
+examples/SpinBot/bridge/ReferenceNative/*.cs

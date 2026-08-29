@@ -1,0 +1,293 @@
+.版本 2
+.扩展 CLR 1
+.扩展 LabAPI 1
+
+.引用命名空间 System.Globalization
+.引用命名空间 EPLab.Runtime
+.引用命名空间 LabApi.Features.Wrappers
+.引用命名空间 SpinBot.Services
+
+.程序集 旋转命令服务, , 公开 密封
+
+.子程序 执行, 逻辑型, 公开
+.参数 上下文, CommandContext
+.参数 运行时, SpinBotNativeRuntime?
+.参数 状态, 旋转状态服务
+.参数 设置, 玩家设置服务
+.参数 语言, 文本型
+.局部变量 动作, 文本型
+
+.如果（运行时 ＝ 空）
+返回（完成（上下文，假，“SpinBot is not running.”，“SpinBot 没有运行。”，语言））
+.如果结束
+
+.如果（上下文.参数.Count ＞ 0）
+动作 ＝ 上下文.参数[1].Trim（）.ToLowerInvariant（）
+.否则
+动作 ＝ “status”
+.如果结束
+
+.如果（动作 ＝ “status”）
+返回（状态命令（上下文，运行时，状态，语言））
+.如果结束
+.如果（动作 ＝ “demo”）
+返回（演示命令（上下文，运行时，语言））
+.如果结束
+.如果（动作 ＝ “spawn”）
+返回（生成命令（上下文，运行时，语言））
+.如果结束
+.如果（动作 ＝ “clear” 或 动作 ＝ “remove”）
+返回（清除命令（上下文，运行时，语言））
+.如果结束
+.如果（动作 ＝ “speed”）
+返回（速度命令（上下文，运行时，语言））
+.如果结束
+.如果（动作 ＝ “mode”）
+返回（模式命令（上下文，运行时，语言））
+.如果结束
+.如果（动作 ＝ “pitch”）
+返回（俯仰命令（上下文，运行时，语言））
+.如果结束
+.如果（动作 ＝ “jump”）
+返回（跳跃命令（上下文，运行时，语言））
+.如果结束
+.如果（动作 ＝ “access”）
+返回（权限命令（上下文，设置，语言））
+.如果结束
+.如果（动作 ＝ “player” 或 动作 ＝ “hvhplayer”）
+返回（玩家命令（上下文，设置，语言））
+.如果结束
+返回（完成（上下文，假，使用方法（语言），使用方法（语言），语言））
+
+.子程序 状态命令, 逻辑型, 私有
+.参数 上下文, CommandContext
+.参数 运行时, SpinBotNativeRuntime
+.参数 状态, 旋转状态服务
+.参数 语言, 文本型
+.局部变量 英文, 文本型
+.局部变量 中文, 文本型
+.局部变量 玩家数, 整数型
+.局部变量 用法, 文本型
+
+玩家数 ＝ 状态.活动真实玩家数（）
+用法 ＝ 使用方法（语言）
+英文 ＝ $“SpinBotE: players={玩家数}, dummies={运行时.DummyCount}, force-submitted={运行时.QueuedShots}, corrected-rays={运行时.CorrectedRays}, no-target={运行时.NoTargetScans}, no-gun={运行时.NoFirearmScans}, last={运行时.LastState}, mode={运行时.Mode}, speed={运行时.Speed} deg/s, pitch={运行时.Pitch}, jump={运行时.JumpEnabled}, demo NTF/CI={运行时.DemoNtfSpinHz}/{运行时.DemoChaosSpinHz} Hz. {用法}”
+中文 ＝ $“SpinBotE：玩家={玩家数}，假人={运行时.DummyCount}，强制请求={运行时.QueuedShots}，修正射线={运行时.CorrectedRays}，无目标={运行时.NoTargetScans}，无武器={运行时.NoFirearmScans}，最近={运行时.LastState}，模式={运行时.Mode}，速度={运行时.Speed} 度/秒，俯仰={运行时.Pitch}，跳跃={运行时.JumpEnabled}，演示九尾狐/混沌={运行时.DemoNtfSpinHz}/{运行时.DemoChaosSpinHz} Hz。{用法}”
+返回（完成（上下文，真，英文，中文，语言））
+
+.子程序 演示命令, 逻辑型, 私有
+.参数 上下文, CommandContext
+.参数 运行时, SpinBotNativeRuntime
+.参数 语言, 文本型
+.局部变量 玩家, Player?
+
+玩家 ＝ Player.Get（上下文.发送者）
+.如果（玩家 ＝ 空 或 非 玩家.IsAlive）
+返回（完成（上下文，假，“Run this in-game as an alive player.”，“请以存活玩家身份在游戏内执行。”，语言））
+.如果结束
+运行时.SpawnDemo（玩家）
+返回（完成（上下文，真，$“Starting the NTF/Chaos demo at {运行时.DemoNtfSpinHz}/{运行时.DemoChaosSpinHz} Hz.”，$“正在开始九尾狐/混沌演示，转速为 {运行时.DemoNtfSpinHz}/{运行时.DemoChaosSpinHz} Hz。”，语言））
+
+.子程序 生成命令, 逻辑型, 私有
+.参数 上下文, CommandContext
+.参数 运行时, SpinBotNativeRuntime
+.参数 语言, 文本型
+.局部变量 玩家, Player?
+.局部变量 种类, 文本型
+.局部变量 数量, 整数型
+
+玩家 ＝ Player.Get（上下文.发送者）
+.如果（玩家 ＝ 空 或 非 玩家.IsAlive）
+返回（完成（上下文，假，“Run this in-game as an alive player.”，“请以存活玩家身份在游戏内执行。”，语言））
+.如果结束
+.如果（上下文.参数.Count ＜ 2）
+返回（完成（上下文，假，“Usage: spinbot spawn <ntf|ci> [count]”，“用法：spinbot spawn <ntf|ci> [数量]”，语言））
+.如果结束
+种类 ＝ 上下文.参数[2].Trim（）.ToLowerInvariant（）
+.如果（种类 != “ntf” 且 种类 != “mtf” 且 种类 != “scout” 且 种类 != “ci” 且 种类 != “chaos” 且 种类 != “revolver”）
+返回（完成（上下文，假，“Kind must be ntf or ci.”，“种类必须是 ntf 或 ci。”，语言））
+.如果结束
+数量 ＝ 1
+.如果（上下文.参数.Count ≥ 3 且 （非 Int32.TryParse（上下文.参数[3]，输出 数量） 或 数量 ＜ 1））
+返回（完成（上下文，假，“Count must be a positive integer.”，“数量必须是正整数。”，语言））
+.如果结束
+运行时.Spawn（玩家，种类，数量）
+返回（完成（上下文，真，$“Spawning {数量} {种类} dummy/dummies.”，$“正在生成 {数量} 个 {种类} 假人。”，语言））
+
+.子程序 清除命令, 逻辑型, 私有
+.参数 上下文, CommandContext
+.参数 运行时, SpinBotNativeRuntime
+.参数 语言, 文本型
+.局部变量 数量, 整数型
+
+数量 ＝ 运行时.Clear（）
+返回（完成（上下文，真，$“Removed {数量} SpinBot dummies.”，$“已移除 {数量} 个 SpinBot 假人。”，语言））
+
+.子程序 速度命令, 逻辑型, 私有
+.参数 上下文, CommandContext
+.参数 运行时, SpinBotNativeRuntime
+.参数 语言, 文本型
+.局部变量 数值, 小数型
+
+.如果（上下文.参数.Count ＜ 2 或 非 Single.TryParse（上下文.参数[2]，NumberStyles.Float，CultureInfo.InvariantCulture，输出 数值））
+返回（完成（上下文，假，“Usage: spinbot speed <degrees-per-second>”，“用法：spinbot speed <每秒角度>”，语言））
+.如果结束
+运行时.SetSpeed（数值）
+返回（完成（上下文，真，$“Dummy speed is now {运行时.Speed} deg/s.”，$“假人速度已设为 {运行时.Speed} 度/秒。”，语言））
+
+.子程序 模式命令, 逻辑型, 私有
+.参数 上下文, CommandContext
+.参数 运行时, SpinBotNativeRuntime
+.参数 语言, 文本型
+.局部变量 模式, 整数型
+
+.如果（上下文.参数.Count ＜ 2 或 非 尝试模式（上下文.参数[2]，输出 模式））
+返回（完成（上下文，假，“Usage: spinbot mode <smooth|reverse|jitter|random>”，“用法：spinbot mode <smooth|reverse|jitter|random>”，语言））
+.如果结束
+运行时.SetMode（模式）
+返回（完成（上下文，真，$“Dummy mode is now {上下文.参数[2]}.”，$“假人模式已设为 {上下文.参数[2]}。”，语言））
+
+.子程序 俯仰命令, 逻辑型, 私有
+.参数 上下文, CommandContext
+.参数 运行时, SpinBotNativeRuntime
+.参数 语言, 文本型
+.局部变量 数值, 小数型
+
+.如果（上下文.参数.Count ＜ 2 或 非 Single.TryParse（上下文.参数[2]，NumberStyles.Float，CultureInfo.InvariantCulture，输出 数值））
+返回（完成（上下文，假，“Usage: spinbot pitch <-88..88>”，“用法：spinbot pitch <-88..88>”，语言））
+.如果结束
+运行时.SetPitch（数值）
+返回（完成（上下文，真，$“Dummy observer pitch is now {运行时.Pitch} deg.”，$“假人观察俯仰已设为 {运行时.Pitch} 度。”，语言））
+
+.子程序 跳跃命令, 逻辑型, 私有
+.参数 上下文, CommandContext
+.参数 运行时, SpinBotNativeRuntime
+.参数 语言, 文本型
+.局部变量 开关, 逻辑型
+
+.如果（上下文.参数.Count ＜ 2 或 非 尝试开关（上下文.参数[2]，输出 开关））
+返回（完成（上下文，假，“Usage: spinbot jump <on|off>”，“用法：spinbot jump <on|off>”，语言））
+.如果结束
+运行时.SetJumpEnabled（开关）
+返回（完成（上下文，真，选择（开关，“Dummy auto-jump enabled.”，“Dummy auto-jump disabled.”），选择（开关，“假人自动跳跃已开启。”，“假人自动跳跃已关闭。”），语言））
+
+.子程序 权限命令, 逻辑型, 私有
+.参数 上下文, CommandContext
+.参数 设置, 玩家设置服务
+.参数 语言, 文本型
+.局部变量 目标, Player?
+.局部变量 授予, 逻辑型
+
+.如果（上下文.参数.Count ＜ 3）
+返回（完成（上下文，假，“Usage: spinbot access <player-id|name> <on|off>”，“用法：spinbot access <玩家ID|名称> <on|off>”，语言））
+.如果结束
+目标 ＝ SpinBotNativeTools.ResolvePlayer（上下文.参数[2]）
+.如果（目标 ＝ 空 或 目标.IsDummy）
+返回（完成（上下文，假，“Player not found (real players only).”，“未找到玩家（仅限真实玩家）。”，语言））
+.如果结束
+.如果（非 尝试开关（上下文.参数[3]，输出 授予））
+返回（完成（上下文，假，“Access must be on or off.”，“权限必须为 on 或 off。”，语言））
+.如果结束
+.如果（非 设置.设置玩家权限（目标，授予））
+返回（完成（上下文，假，“Could not update access.”，“无法更新权限。”，语言））
+.如果结束
+返回（完成（上下文，真，选择（授予，$“Granted HVH access to {目标.Nickname}.”，$“Revoked HVH access from {目标.Nickname}.”），选择（授予，$“已授予 {目标.Nickname} HVH 权限。”，$“已撤销 {目标.Nickname} HVH 权限。”），语言））
+
+.子程序 玩家命令, 逻辑型, 私有
+.参数 上下文, CommandContext
+.参数 设置, 玩家设置服务
+.参数 语言, 文本型
+.局部变量 目标, Player?
+.局部变量 开启, 逻辑型
+.局部变量 操作, 文本型
+
+.如果（上下文.参数.Count ＜ 3）
+返回（完成（上下文，假，“Usage: spinbot player <player-id|name> <on|off|toggle>”，“用法：spinbot player <玩家ID|名称> <on|off|toggle>”，语言））
+.如果结束
+目标 ＝ SpinBotNativeTools.ResolvePlayer（上下文.参数[2]）
+.如果（目标 ＝ 空 或 目标.IsDummy）
+返回（完成（上下文，假，“Player not found (real players only).”，“未找到玩家（仅限真实玩家）。”，语言））
+.如果结束
+.如果（非 设置.有权限（目标））
+返回（完成（上下文，假，$“{目标.Nickname} has no HVH access.”，$“{目标.Nickname} 没有 HVH 权限。”，语言））
+.如果结束
+操作 ＝ 上下文.参数[3].Trim（）.ToLowerInvariant（）
+.如果（操作 ＝ “toggle”）
+开启 ＝ 非 设置.玩家是否启用（目标）
+.否则
+.如果（非 尝试开关（操作，输出 开启））
+返回（完成（上下文，假，“State must be on, off, or toggle.”，“状态必须为 on、off 或 toggle。”，语言））
+.如果结束
+.如果结束
+.如果（非 设置.设置玩家启用（目标，开启，真））
+返回（完成（上下文，假，$“Could not enable HVH for {目标.Nickname}; they need an initialized FPC role.”，$“无法为 {目标.Nickname} 开启 HVH；玩家需要已初始化的 FPC 角色。”，语言））
+.如果结束
+返回（完成（上下文，真，选择（开启，$“Enabled HVH for {目标.Nickname}.”，$“Disabled HVH for {目标.Nickname}.”），选择（开启，$“已为 {目标.Nickname} 开启 HVH。”，$“已为 {目标.Nickname} 关闭 HVH。”），语言））
+
+.子程序 尝试模式, 逻辑型, 私有 静态
+.参数 文本, 文本型
+.参数 模式, 整数型, 输出
+.局部变量 值, 文本型
+
+值 ＝ 文本.Trim（）.ToLowerInvariant（）
+.如果（值 ＝ “smooth”）
+模式 ＝ 0
+返回（真）
+.如果结束
+.如果（值 ＝ “reverse”）
+模式 ＝ 1
+返回（真）
+.如果结束
+.如果（值 ＝ “jitter”）
+模式 ＝ 2
+返回（真）
+.如果结束
+.如果（值 ＝ “random”）
+模式 ＝ 3
+返回（真）
+.如果结束
+模式 ＝ 0
+返回（假）
+
+.子程序 尝试开关, 逻辑型, 私有 静态
+.参数 文本, 文本型
+.参数 开关, 逻辑型, 输出
+.局部变量 值, 文本型
+
+值 ＝ 文本.Trim（）.ToLowerInvariant（）
+.如果（值 ＝ “on” 或 值 ＝ “true” 或 值 ＝ “1” 或 值 ＝ “yes”）
+开关 ＝ 真
+返回（真）
+.如果结束
+.如果（值 ＝ “off” 或 值 ＝ “false” 或 值 ＝ “0” 或 值 ＝ “no”）
+开关 ＝ 假
+返回（真）
+.如果结束
+开关 ＝ 假
+返回（假）
+
+.子程序 完成, 逻辑型, 私有 静态
+.参数 上下文, CommandContext
+.参数 成功, 逻辑型
+.参数 英文, 文本型
+.参数 中文, 文本型
+.参数 语言, 文本型
+
+上下文.回复 ＝ 选择语言（语言，英文，中文）
+上下文.成功 ＝ 成功
+返回（成功）
+
+.子程序 使用方法, 文本型, 私有 静态
+.参数 语言, 文本型
+
+返回（选择语言（语言，“Commands: spinbot demo | spawn <ntf|ci> [count] | access <id|name> <on|off> | player <id|name> <on|off|toggle> | clear | speed <dps> | mode <smooth|reverse|jitter|random> | pitch <-88..88> | jump <on|off> | status”，“命令：spinbot demo | spawn <ntf|ci> [数量] | access <ID|名称> <on|off> | player <ID|名称> <on|off|toggle> | clear | speed <速度> | mode <smooth|reverse|jitter|random> | pitch <-88..88> | jump <on|off> | status”））
+
+.子程序 选择语言, 文本型, 私有 静态
+.参数 语言, 文本型
+.参数 英文, 文本型
+.参数 中文, 文本型
+
+.如果（非 String.IsNullOrWhiteSpace（语言） 且 String.Equals（语言.Trim（），“en”，StringComparison.OrdinalIgnoreCase））
+返回（英文）
+.如果结束
+返回（中文）

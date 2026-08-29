@@ -1,0 +1,15 @@
+{
+  "format": 1,
+  "name": "ScriptedWarheadEPLab",
+  "target": "labapi-net48",
+  "rootNamespace": "ScriptedWarheadEPLab",
+  "sourceDirectories": ["src"],
+  "references": [
+    "game:LabApi",
+    "game:Assembly-CSharp",
+    "game:Assembly-CSharp-firstpass",
+    "game:CommandSystem.Core",
+    "Bridge/bin/Release/net48/ScriptedWarhead.EPLab.Bridge.dll"
+  ],
+  "outputDirectory": "bin"
+}

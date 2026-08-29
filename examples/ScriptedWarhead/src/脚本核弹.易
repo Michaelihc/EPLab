@@ -1,0 +1,290 @@
+.版本 2
+.扩展 CLR 1
+.扩展 LabAPI 1
+
+.引用命名空间 LabApi.Events.Arguments.ServerEvents
+.引用命名空间 LabApi.Events.Arguments.WarheadEvents
+.引用命名空间 LabApi.Events.Handlers
+.引用命名空间 EPLab.Runtime
+.引用命名空间 ScriptedWarheadEPLab.Bridge
+
+' 这是插件的“目录卡”：EPLab 会为我们生成 LabAPI 外壳。
+.LabAPI插件 主程序集
+.插件名称 “ScriptedWarheadEPLab”
+.插件说明 “易风格源代码驱动的 DMS 与 Omega 核弹时间线。”
+.插件作者 “Codex / EPLab”
+.插件版本 “0.8.0”
+
+' 服务器事件仍是官方 LabAPI 事件；订阅和取消订阅由生成的外壳配对完成。
+.订阅事件 ServerEvents.RoundStarted, 回合开始
+.订阅事件 ServerEvents.RoundEnded, 回合结束
+.订阅事件 ServerEvents.RoundRestarted, 回合重启
+.订阅事件 ServerEvents.WaitingForPlayers, 等待玩家
+.订阅事件 WarheadEvents.Detonated, 原生核弹已引爆
+
+' “sw omega”和“sw status”都是 RA 命令，并需要 WarheadEvents 权限。
+.RA命令 “sw”, “scriptedwarhead”, “Controls the Omega sequence: sw <omega|status>”, 处理命令
+
+' 配置名字故意用容易在 YAML 里找到的英文；逻辑和注释仍然是亲切的中文。
+.配置项 is_enabled, 逻辑型, 真, “is_enabled”, “Enable this plugin.”, “是否启用插件。”
+.配置项 language, 文本型, “”, “language”, “Empty or cn uses Chinese; en uses English.”, “空或 cn 使用中文；en 使用英文。”
+.配置项 omega_audio_enabled, 逻辑型, 真, “omega_audio_enabled”, “Play custom Omega audio.”, “是否播放自定义 Omega 音频。”
+.配置项 omega_audio_path, 文本型, “”, “omega_audio_path”, “Absolute path to the Omega audio file.”, “Omega 音频文件的绝对路径。”
+.配置项 omega_audio_ffmpeg_path, 文本型, “ffmpeg”, “omega_audio_ffmpeg_path”, “Path or command name for ffmpeg.”, “ffmpeg 的路径或命令名。”
+.配置项 omega_audio_volume, 小数型, 1, “omega_audio_volume”, “Native speaker volume from 0 to 2.”, “原生扬声器音量，范围 0 到 2。”
+.配置项 omega_audio_max_seconds, 整数型, 240, “omega_audio_max_seconds”, “Maximum decoded audio length.”, “最多解码多少秒音频。”
+.配置项 omega_subtitle_delay_seconds, 小数型, 3.19, “omega_subtitle_delay_seconds”, “Delay from playback to subtitle.”, “播放后多久显示字幕。”
+.配置项 omega_subtitle_duration_seconds, 小数型, 6, “omega_subtitle_duration_seconds”, “Subtitle duration.”, “字幕显示时间。”
+.配置项 omega_detonation_delay_seconds, 小数型, 182, “omega_detonation_delay_seconds”, “Delay from actual playback to Omega expiry.”, “从实际播放开始到 Omega 到期的秒数。”
+
+.程序集 主程序集, , 公开 密封
+.程序集变量 原生桥, ScriptedWarheadNativeBridge, 私有, , 创建对象（ScriptedWarheadNativeBridge）
+.程序集变量 已启用, 逻辑型, 私有
+.程序集变量 回合活动, 逻辑型, 私有
+.程序集变量 欧米伽活动, 逻辑型, 私有
+.程序集变量 回合代号, 整数型, 私有
+
+' 生成的 LabAPI 外壳会在 Enable() 时调用这里。
+.子程序 插件启动, , 公开
+
+原生桥.LoadConfiguration（配置）
+已启用 ＝ 原生桥.IsEnabled（）
+.如果真（已启用 ＝ 假）
+日志.信息（“[ScriptedWarhead/EPLab] Disabled by config.”）
+返回（）
+.如果真结束
+
+原生桥.EnableConfiguredAudio（）
+日志.信息（“[ScriptedWarhead/EPLab] Easy timeline enabled.”）
+
+.子程序 插件停止, , 公开
+
+已启用 ＝ 假
+回合活动 ＝ 假
+欧米伽活动 ＝ 假
+回合代号 ＝ 回合代号 ＋ 1
+原生桥.Disable（）
+
+' 每次新回合都从一张干净的白纸开始。
+.子程序 回合开始, , 公开
+
+.如果真（已启用 ＝ 假）
+返回（）
+.如果真结束
+重置回合（）
+回合活动 ＝ 真
+原生桥.PrepareAudio（）
+原生桥.Schedule（19 × 60，&到达DMS里程碑）
+日志.信息（“[ScriptedWarhead/EPLab] Timeline armed: DMS at 19:00; Omega waits for the native DMS detonation.”）
+
+.子程序 回合结束, , 公开
+.参数 事件, RoundEndedEventArgs
+
+.如果真（已启用）
+重置回合（）
+.如果真结束
+
+.子程序 回合重启, , 公开
+
+.如果真（已启用）
+重置回合（）
+.如果真结束
+
+.子程序 等待玩家, , 公开
+
+.如果真（已启用）
+重置回合（）
+.如果真结束
+
+.子程序 重置回合, , 私有
+
+回合活动 ＝ 假
+欧米伽活动 ＝ 假
+回合代号 ＝ 回合代号 ＋ 1
+原生桥.ResetRound（）
+
+' 19:00 只启动原生 DMS。Omega 不在这里启动。
+.子程序 到达DMS里程碑, , 私有
+.局部变量 结果, 整数型
+
+.如果真（回合活动 ＝ 假 或 原生桥.IsRoundInProgress（） ＝ 假）
+返回（）
+.如果真结束
+
+结果 ＝ 原生桥.TryInitiateDeadmanSwitch（）
+.判断开始
+.判断（结果 ＝ 0）
+日志.信息（“[ScriptedWarhead/EPLab] DMS milestone reached; it was already active.”）
+.判断（结果 ＝ 1）
+日志.信息（“[ScriptedWarhead/EPLab] Forced the native Deadman Switch at 19:00.”）
+.默认
+日志.警告（“[ScriptedWarhead/EPLab] DMS could not start because the native warhead was unavailable or detonated.”）
+.判断结束
+
+' 只有“原生 DMS 已经真的爆炸”才能自动启动 Omega。
+.子程序 原生核弹已引爆, , 公开
+.参数 事件, WarheadDetonatedEventArgs
+
+.如果真（已启用 ＝ 假 或 回合活动 ＝ 假 或 欧米伽活动 或 原生桥.IsRoundInProgress（） ＝ 假）
+返回（）
+.如果真结束
+.如果真（原生桥.IsDeadmanSwitchDetonation（） ＝ 假）
+日志.信息（“[ScriptedWarhead/EPLab] Ignored a non-DMS native warhead detonation.”）
+返回（）
+.如果真结束
+启动欧米伽（“native Deadman Switch detonation”）
+
+' 这里就是整个 Omega 策略：改设施、准备倒计时、尝试音频、失败则 CASSIE。
+.子程序 启动欧米伽, , 私有
+.参数 触发原因, 文本型
+.局部变量 打开的门, 整数型
+.局部变量 未碰的电梯门, 整数型
+.局部变量 改色的灯, 整数型
+.局部变量 音频回复, 文本型
+.局部变量 已请求音频, 逻辑型
+
+.如果真（欧米伽活动）
+返回（）
+.如果真结束
+欧米伽活动 ＝ 真
+原生桥.ApplyOmegaFacility（输出 打开的门，输出 未碰的电梯门，输出 改色的灯）
+安排欧米伽引爆（“Omega trigger fallback”）
+
+.如果（原生桥.AudioEnabled（））
+已请求音频 ＝ 原生桥.TryPlayAudio（&音频开始，&音频失败，输出 音频回复）
+.如果（已请求音频）
+日志.信息（$“[ScriptedWarhead/EPLab] Requested native custom audio: {音频回复}”）
+.否则
+日志.警告（$“[ScriptedWarhead/EPLab] Custom audio unavailable: {音频回复}; using CASSIE fallback.”）
+原生桥.PlayFallbackCassie（原生桥.Language（））
+.如果结束
+.否则
+原生桥.PlayFallbackCassie（原生桥.Language（））
+.如果结束
+
+日志.信息（$“[ScriptedWarhead/EPLab] Omega started by {触发原因}; opened {打开的门} non-elevator doors, left {未碰的电梯门} elevator doors untouched, and recolored {改色的灯} light controllers.”）
+
+' 真正开始播放后，重新锚定字幕和 182 秒倒计时。
+.子程序 音频开始, , 私有
+.局部变量 字幕延迟, 小数型
+
+.如果真（回合活动 ＝ 假 或 欧米伽活动 ＝ 假 或 原生桥.IsRoundInProgress（） ＝ 假）
+返回（）
+.如果真结束
+字幕延迟 ＝ 原生桥.SubtitleDelaySeconds（）
+原生桥.Schedule（字幕延迟，&播放自定义字幕）
+安排欧米伽引爆（“actual native audio playback”）
+日志.信息（$“[ScriptedWarhead/EPLab] Audio playback began; subtitle in {字幕延迟:0.##} seconds.”）
+
+.子程序 音频失败, , 私有
+.参数 原因, 文本型
+
+.如果真（回合活动 ＝ 假 或 欧米伽活动 ＝ 假 或 原生桥.IsRoundInProgress（） ＝ 假）
+返回（）
+.如果真结束
+日志.警告（$“[ScriptedWarhead/EPLab] Custom audio failed: {原因}; using CASSIE fallback.”）
+原生桥.PlayFallbackCassie（原生桥.Language（））
+
+.子程序 播放自定义字幕, , 私有
+
+.如果真（回合活动 且 欧米伽活动 且 原生桥.IsRoundInProgress（））
+原生桥.PlayCustomSubtitle（原生桥.Language（），原生桥.SubtitleDurationSeconds（））
+.如果真结束
+
+.子程序 安排欧米伽引爆, , 私有
+.参数 锚点, 文本型
+.局部变量 延迟, 小数型
+
+延迟 ＝ 取引爆延迟（）
+原生桥.ScheduleDetonation（延迟，&引爆欧米伽）
+日志.信息（$“[ScriptedWarhead/EPLab] Omega detonation scheduled {延迟:0.##} seconds after {锚点}.”）
+
+.子程序 引爆欧米伽, , 私有
+.局部变量 杀死人数, 整数型
+.局部变量 触发原生引爆, 逻辑型
+
+.如果真（回合活动 ＝ 假 或 欧米伽活动 ＝ 假 或 原生桥.IsRoundInProgress（） ＝ 假）
+返回（）
+.如果真结束
+杀死人数 ＝ 原生桥.DetonateAndKill（输出 触发原生引爆）
+.如果真（触发原生引爆）
+日志.信息（“[ScriptedWarhead/EPLab] Triggered native Alpha Warhead instant detonation with Omega.”）
+.如果真结束
+日志.信息（$“[ScriptedWarhead/EPLab] Omega expired; killed {杀死人数} living player(s).”）
+
+.子程序 取引爆延迟, 小数型, 私有
+
+返回（原生桥.DetonationDelaySeconds（））
+
+' RA 命令的全部用户体验在易源码里，而不是藏在桥接 DLL 里。
+.子程序 处理命令, 逻辑型, 公开
+.参数 命令, CommandContext
+.局部变量 动作, 文本型
+.局部变量 延迟, 小数型
+
+.如果真（原生桥.HasWarheadPermission（命令.发送者） ＝ 假）
+命令.回复 ＝ 本地文本（“权限不足：需要 WarheadEvents 权限。”，“Permission denied: WarheadEvents is required.”）
+返回（假）
+.如果真结束
+
+.如果真（取数组成员数（命令.参数） ≠ 1）
+命令.回复 ＝ 本地文本（“用法：sw <omega|status>”，“Usage: sw <omega|status>”）
+返回（假）
+.如果真结束
+
+动作 ＝ 命令.参数[1]
+.如果真（原生桥.TextEquals（动作，“omega”））
+.如果真（已启用 ＝ 假）
+命令.回复 ＝ 本地文本（“ScriptedWarhead 已禁用。”，“ScriptedWarhead is disabled.”）
+返回（假）
+.如果真结束
+.如果真（回合活动 ＝ 假 或 原生桥.IsRoundInProgress（） ＝ 假）
+命令.回复 ＝ 本地文本（“当前没有进行中的回合。”，“No round is in progress.”）
+返回（假）
+.如果真结束
+.如果真（欧米伽活动）
+命令.回复 ＝ 本地文本（“Omega 已经启动。”，“Omega is already active.”）
+返回（假）
+.如果真结束
+原生桥.CancelDetonation（）
+启动欧米伽（“RA command”）
+延迟 ＝ 取引爆延迟（）
+命令.回复 ＝ 本地文本（$“Omega 流程已启动；播放开始 {延迟:0.##} 秒后到期。”，$“Omega started; it expires {延迟:0.##} seconds after playback begins.”）
+返回（真）
+.如果真结束
+
+.如果真（原生桥.TextEquals（动作，“status”））
+命令.回复 ＝ 取得状态（）
+返回（真）
+.如果真结束
+
+命令.回复 ＝ 本地文本（“用法：sw <omega|status>”，“Usage: sw <omega|status>”）
+返回（假）
+
+.子程序 取得状态, 文本型, 私有
+.局部变量 延迟, 小数型
+.局部变量 剩余秒数, 整数型
+
+.如果真（已启用 ＝ 假）
+返回（本地文本（“ScriptedWarhead 已禁用。”，“ScriptedWarhead is disabled.”））
+.如果真结束
+.如果真（回合活动 ＝ 假 或 原生桥.IsRoundInProgress（） ＝ 假）
+返回（本地文本（“当前没有进行中的回合。”，“No round is in progress.”））
+.如果真结束
+.如果（欧米伽活动 ＝ 假）
+延迟 ＝ 取引爆延迟（）
+返回（本地文本（$“时间线已就绪：DMS 于 19:00 启动；Omega 等待 DMS 真正引爆，并在播放开始 {延迟:0.##} 秒后到期。”，$“Timeline armed: DMS starts at 19:00; Omega waits for the real DMS detonation and expires {延迟:0.##} seconds after playback.”））
+.否则
+剩余秒数 ＝ 原生桥.RemainingDetonationSeconds（）
+返回（本地文本（$“Omega 已启动；{剩余秒数} 秒后到期。”，$“Omega is active; expiry in {剩余秒数} seconds.”））
+.如果结束
+
+.子程序 本地文本, 文本型, 私有
+.参数 中文, 文本型
+.参数 英文, 文本型
+
+.如果（原生桥.IsChinese（原生桥.Language（）））
+返回（中文）
+.否则
+返回（英文）
+.如果结束

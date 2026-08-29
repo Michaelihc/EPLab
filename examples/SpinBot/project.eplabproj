@@ -1,0 +1,21 @@
+{
+  "format": 1,
+  "name": "EPLabSpinBot",
+  "target": "labapi-net48",
+  "rootNamespace": "EPLabSpinBot",
+  "sourceDirectories": ["src"],
+  "references": [
+    "bridge/bin/Release/SpinBot.EPLab.Bridge.dll",
+    "game:LabApi",
+    "game:Assembly-CSharp",
+    "game:Assembly-CSharp-firstpass",
+    "game:CommandSystem.Core",
+    "game:Mirror",
+    "game:Pooling",
+    "game:UnityEngine",
+    "game:UnityEngine.CoreModule",
+    "game:UnityEngine.PhysicsModule",
+    "global:ServerKeybinds"
+  ],
+  "outputDirectory": "bin"
+}

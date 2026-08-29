@@ -1,0 +1,233 @@
+.版本 2
+.扩展 CLR 1
+.扩展 LabAPI 1
+
+.引用命名空间 System.Collections.Generic
+.引用命名空间 LabApi.Events.Arguments.PlayerEvents
+.引用命名空间 LabApi.Events.Handlers
+.引用命名空间 LabApi.Features.Wrappers
+.引用命名空间 PlayerRoles.FirstPersonControl
+.引用命名空间 SpinBot.Models
+.引用命名空间 SpinBot.Services
+.引用命名空间 UnityEngine
+
+.LabAPI插件 旋转插件
+.插件名称 “SpinBotE”
+.插件说明 “用易语言风格源码实现的观察者反瞄、原生开火辅助与演示假人。”
+.插件作者 “Cement / EPLab port”
+.插件版本 “1.0.0”
+
+' 第 4 列是写进 YAML 的英文名字；后两列是英文和中文解释。
+.配置项 是否启用, 逻辑型, 真, “is_enabled”, “Master switch.”, “总开关。”
+.配置项 语言, 文本型, “”, “language”, “Empty falls back to Chinese because this shared settings block has no per-player language surface; en/cn force a language.”, “这个共享设置区块无法按玩家读取语言，因此留空时回退中文；en/cn 强制语言。”
+.配置项 允许玩家旋转, 逻辑型, 真, “enable_player_spin”, “Show authorized players the SpinBot settings.”, “向获授权玩家显示 SpinBot 设置。”
+.配置项 授权用户, 列表<文本型>, 创建对象（“列表<文本型>”）, “authorized_user_ids”, “Persistent authorized user IDs; manage with spinbot access.”, “持久授权用户 ID；用 spinbot access 管理。”
+.配置项 自动瞄准开火, 逻辑型, 真, “enable_auto_aim_and_fire”, “Use native firearm requests for active players.”, “为已开启玩家使用原生武器请求。”
+.配置项 默认开火模式, 开火控制模式, #开火控制模式.强制开火, “default_fire_control_mode”, “ForceFire or CorrectOnFire.”, “强制开火或开火时修正。”
+.配置项 自动瞄准最远距离, 小数型, 150F, “auto_aim_maximum_distance”, “Maximum target distance in metres.”, “最远目标距离（米）。”
+.配置项 自动开火最小间隔, 小数型, 0.12F, “auto_fire_interval”, “Minimum seconds between native shot requests.”, “原生射击请求的最小秒数间隔。”
+.配置项 自动扫描间隔, 小数型, 0.12F, “auto_aim_scan_interval”, “Delay between idle or blocked scans.”, “空闲或受阻扫描之间的延迟。”
+.配置项 默认最低伤害, 小数型, 20F, “default_minimum_damage”, “Default predicted-damage threshold.”, “默认预测伤害门槛。”
+.配置项 最高最低伤害, 小数型, 200F, “maximum_minimum_damage”, “Largest value on the damage slider.”, “伤害滑条最大值。”
+.配置项 可瞄准假人, 逻辑型, 真, “auto_aim_targets_dummies”, “Allow enemy RA dummies as targets.”, “允许敌对 RA 假人成为目标。”
+.配置项 切换按键, KeyCode, #KeyCode.V, “toggle_key”, “Suggested key; players still choose whether to apply it.”, “建议按键；玩家仍需自己选择是否采用。”
+.配置项 默认模式, 旋转模式, #旋转模式.抖动, “default_mode”, “Initial observer anti-aim mode.”, “初始观察者反瞄模式。”
+.配置项 默认旋转速度, 小数型, 720F, “default_rotation_speed”, “Degrees per second.”, “每秒旋转角度。”
+.配置项 最小旋转速度, 小数型, 90F, “minimum_rotation_speed”, “Smallest player slider value.”, “玩家速度滑条最小值。”
+.配置项 最大旋转速度, 小数型, 2160F, “maximum_rotation_speed”, “Largest player and command value.”, “玩家与命令的最大速度。”
+.配置项 默认观察俯仰, 小数型, -88F, “default_observer_pitch”, “Pitch seen by observers; the owner camera is unchanged.”, “他人看到的俯仰；本人镜头不变。”
+.配置项 抖动每秒次数, 小数型, 14F, “jitter_updates_per_second”, “Direction changes per second.”, “每秒改变方向次数。”
+.配置项 抖动角度, 小数型, 155F, “jitter_angle”, “Yaw offset used by jitter.”, “抖动偏航量。”
+.配置项 随机每秒次数, 小数型, 16F, “random_updates_per_second”, “Random snaps per second.”, “每秒随机跳转次数。”
+.配置项 显示切换提示, 逻辑型, 真, “show_toggle_hint”, “Show a short hint when toggled.”, “切换时显示短提示。”
+.配置项 假人自动跳跃, 逻辑型, 真, “dummy_auto_jump”, “Make spawned dummies hop.”, “让生成的假人跳跃。”
+.配置项 假人跳跃间隔, 小数型, 0.58F, “dummy_jump_interval”, “Seconds between jump attempts.”, “跳跃尝试的秒数间隔。”
+.配置项 单次最多假人, 整数型, 16, “maximum_dummies_per_command”, “Spawn-command limit.”, “单次生成命令上限。”
+.配置项 生成距离, 小数型, 4.5F, “spawn_distance_meters”, “Distance in front of the admin.”, “在管理员面前的生成距离。”
+.配置项 假人间距, 小数型, 2.2F, “dummy_spacing_meters”, “Horizontal spacing.”, “水平间距。”
+.配置项 演示九尾狐赫兹, 小数型, 5F, “demo_ntf_spin_hz”, “NTF demo turns per second.”, “九尾狐演示每秒圈数。”
+.配置项 演示混沌赫兹, 小数型, 0.8F, “demo_chaos_spin_hz”, “Chaos demo turns per second.”, “混沌演示每秒圈数。”
+.配置项 演示混沌延迟, 小数型, 3F, “demo_chaos_reveal_delay”, “Seconds before Chaos reveals.”, “混沌出现前的秒数。”
+.配置项 演示九尾狐移动半径, 小数型, 0.7F, “demo_ntf_movement_radius”, “NTF movement radius.”, “九尾狐移动半径。”
+.配置项 演示九尾狐移动赫兹, 小数型, 0.45F, “demo_ntf_movement_hz”, “NTF movement loops per second.”, “九尾狐每秒移动圈数。”
+.配置项 演示混沌移动半径, 小数型, 0.65F, “demo_chaos_movement_radius”, “Chaos movement radius.”, “混沌移动半径。”
+.配置项 演示混沌移动赫兹, 小数型, 0.4F, “demo_chaos_movement_hz”, “Chaos movement loops per second.”, “混沌每秒移动圈数。”
+
+.订阅事件 PlayerEvents.Left, 玩家离开
+.订阅事件 PlayerEvents.ChangedRole, 玩家更换角色
+.订阅事件 ServerEvents.RoundRestarted, 回合重启
+.RA命令 “spinbot”, “sbot|hvh”, “Manage observer anti-aim, access, native fire help, and demo dummies.”, 处理旋转命令, “FacilityManagement”
+
+.程序集 旋转插件, EasySpinHost, 公开 密封
+.程序集变量 状态服务, 旋转状态服务, 私有, , 创建对象（旋转状态服务）
+.程序集变量 设置服务, 玩家设置服务, 私有, , 创建对象（玩家设置服务）
+.程序集变量 命令服务, 旋转命令服务, 私有, , 创建对象（旋转命令服务）
+.程序集变量 原生运行时, SpinBotNativeRuntime?, 私有
+.程序集变量 正在运行, 逻辑型, 私有
+.程序集变量 当前语言, 文本型, 私有
+
+.子程序 插件启动, , 公开
+.局部变量 当前配置, __EplabConfig?
+
+当前配置 ＝ 配置
+.如果（当前配置 ＝ 空 或 非 当前配置.是否启用）
+日志.信息（“[SpinBot/EPLab] 配置已关闭插件。”）
+返回（）
+.如果结束
+
+.尝试
+当前语言 ＝ 当前配置.语言
+状态服务.初始化（当前配置.最大旋转速度，当前配置.抖动每秒次数，当前配置.抖动角度，当前配置.随机每秒次数）
+设置服务.设置保存回调（&SaveGeneratedConfig）
+设置服务.初始化（状态服务，当前配置.允许玩家旋转，当前配置.授权用户，当前配置.语言，当前配置.切换按键，当前配置.默认模式，当前配置.默认旋转速度，当前配置.最小旋转速度，当前配置.最大旋转速度，当前配置.默认观察俯仰，当前配置.默认最低伤害，当前配置.最高最低伤害，当前配置.默认开火模式，当前配置.显示切换提示）
+设置服务.启用（）
+原生运行时 ＝ StartNative（创建原生选项（当前配置））
+正在运行 ＝ 真
+日志.信息（“[SpinBot/EPLab] 已启用：易源码管理策略，窄桥接管理 Harmony、武器和假人。”）
+.捕获 异常, Exception
+日志.错误（$“[SpinBot/EPLab] 启动失败：{异常.Message}”）
+安全停止（）
+.尝试结束
+
+.子程序 插件停止, , 公开
+
+安全停止（）
+
+.子程序 安全停止, , 私有
+
+正在运行 ＝ 假
+.如果（设置服务 != 空）
+设置服务.停用（）
+.如果结束
+.如果（原生运行时 != 空）
+原生运行时.Dispose（）
+原生运行时 ＝ 空
+.如果结束
+.如果（状态服务 != 空）
+状态服务.全部清空（）
+.如果结束
+
+.子程序 创建原生选项, SpinBotNativeOptions, 私有
+.参数 当前配置, __EplabConfig
+.局部变量 选项, SpinBotNativeOptions, , , 创建对象（SpinBotNativeOptions）
+
+选项.EnableAutoAimAndFire ＝ 当前配置.自动瞄准开火
+选项.AutoAimMaximumDistance ＝ 当前配置.自动瞄准最远距离
+选项.AutoFireInterval ＝ 当前配置.自动开火最小间隔
+选项.AutoAimScanInterval ＝ 当前配置.自动扫描间隔
+选项.AutoAimTargetsDummies ＝ 当前配置.可瞄准假人
+选项.DefaultMode ＝ 转换类型（整数型，当前配置.默认模式）
+选项.DefaultRotationSpeed ＝ 当前配置.默认旋转速度
+选项.DefaultObserverPitch ＝ 当前配置.默认观察俯仰
+选项.MaximumRotationSpeed ＝ 当前配置.最大旋转速度
+选项.DummyAutoJump ＝ 当前配置.假人自动跳跃
+选项.DummyJumpInterval ＝ 当前配置.假人跳跃间隔
+选项.MaximumDummiesPerCommand ＝ 当前配置.单次最多假人
+选项.SpawnDistanceMeters ＝ 当前配置.生成距离
+选项.DummySpacingMeters ＝ 当前配置.假人间距
+选项.DemoNtfSpinHz ＝ 当前配置.演示九尾狐赫兹
+选项.DemoChaosSpinHz ＝ 当前配置.演示混沌赫兹
+选项.DemoChaosRevealDelay ＝ 当前配置.演示混沌延迟
+选项.DemoNtfMovementRadius ＝ 当前配置.演示九尾狐移动半径
+选项.DemoNtfMovementHz ＝ 当前配置.演示九尾狐移动赫兹
+选项.DemoChaosMovementRadius ＝ 当前配置.演示混沌移动半径
+选项.DemoChaosMovementHz ＝ 当前配置.演示混沌移动赫兹
+返回（选项）
+
+.子程序 玩家离开, , 公开
+.参数 事件, PlayerLeftEventArgs
+
+.如果（正在运行）
+状态服务.停用玩家（事件.Player）
+设置服务.玩家离开（事件.Player）
+.如果结束
+
+.子程序 玩家更换角色, , 公开
+.参数 事件, PlayerChangedRoleEventArgs
+
+.如果（正在运行 且 状态服务.暂时解绑（事件.Player））
+ScheduleRebind（事件.Player，0.15F）
+.如果结束
+
+.子程序 回合重启, , 公开
+
+.如果（正在运行）
+状态服务.全部清空（）
+.如果结束
+
+.子程序 处理旋转命令, 逻辑型, 公开
+.参数 上下文, EPLab.Runtime.CommandContext
+
+.如果（非 正在运行 或 原生运行时 ＝ 空）
+上下文.回复 ＝ 选择插件语言（“SpinBot is not running.”，“SpinBot 没有运行。”）
+上下文.成功 ＝ 假
+返回（假）
+.如果结束
+返回（命令服务.执行（上下文，原生运行时，状态服务，设置服务，当前语言））
+
+.子程序 选择插件语言, 文本型, 私有
+.参数 英文, 文本型
+.参数 中文, 文本型
+
+.如果（非 String.IsNullOrWhiteSpace（当前语言） 且 String.Equals（当前语言.Trim（），“en”，StringComparison.OrdinalIgnoreCase））
+返回（英文）
+.如果结束
+返回（中文）
+
+' ===== EasySpinHost 的窄桥接契约 =====
+.子程序 TryGetPose, 逻辑型, 公开, 重写
+.参数 mouseLook, FpcMouseLook
+.参数 now, 小数型
+.参数 pose, SpinPose, 输出
+
+返回（状态服务.尝试取姿态（mouseLook，now，输出 pose））
+
+.子程序 EnableFor, 逻辑型, 公开, 重写
+.参数 player, Player
+.参数 mode, 整数型
+.参数 speed, 小数型
+.参数 pitch, 小数型
+.参数 isDummy, 逻辑型
+
+返回（状态服务.启用玩家（player，创建对象（旋转方案，转换类型（旋转模式，mode），speed，pitch），isDummy））
+
+.子程序 DisableFor, 逻辑型, 公开, 重写
+.参数 player, Player
+
+返回（状态服务.停用玩家（player））
+
+.子程序 IsActive, 逻辑型, 公开, 重写
+.参数 player, Player
+
+返回（状态服务.是否启用（player））
+
+.子程序 UpdateDummyProfiles, , 公开, 重写
+.参数 mode, 整数型
+.参数 speed, 小数型
+.参数 pitch, 小数型
+
+状态服务.更新假人方案（转换类型（旋转模式，mode），speed，pitch）
+
+.子程序 GetActiveRealPlayers, 列表<Player>, 公开, 重写
+
+返回（状态服务.取活动真实玩家（））
+
+.子程序 HasAccess, 逻辑型, 公开, 重写
+.参数 player, Player
+
+返回（设置服务.有权限（player））
+
+.子程序 GetMinimumDamage, 小数型, 公开, 重写
+.参数 player, Player
+
+返回（设置服务.取最低伤害（player））
+
+.子程序 GetFireControlMode, 整数型, 公开, 重写
+.参数 player, Player
+
+返回（转换类型（整数型，设置服务.取开火模式（player）））
+
+.子程序 RebindPlayer, , 公开, 重写
+.参数 player, Player
+
+状态服务.重新绑定（player）
