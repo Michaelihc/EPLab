@@ -1,151 +1,149 @@
-# EPLab 兼容约定
+# EPLab compatibility contract
 
-[English](COMPATIBILITY.en.md)
+### The honest one-sentence description
 
-### 一句话说清楚
+EPLab is an **unofficial, independently implemented, 易语言-inspired textual dialect** with documented source compatibility and useful extensions for CLR and LabAPI; it is not a replacement for every part of the official 易语言 IDE, compiler, runtime, libraries, or binary project format.
 
-EPLab 是一个**非官方、独立实现、受易语言启发的文本方言**。它在本文明确写出的范围内提供源码兼容，并增加实用的 CLR 与 LabAPI 语法；它不能替代官方易语言 IDE、编译器、运行库、支持库或二进制项目格式的全部功能。
+There is no complete public normative specification that EPLab can truthfully claim to implement. “Compatible” in this project means only the behavior listed in this file. If this file and an assumption about official behavior disagree, this file wins for EPLab.
 
-目前没有一份完整公开、可作为规范的官方说明，所以 EPLab 不能诚实地宣称“完整实现官方规范”。在本项目里，“兼容”只表示本文列出的行为。如果猜测中的官方行为和本文冲突，EPLab 以本文为准。
+### Status words
 
-### 状态词是什么意思
-
-| 状态词 | 含义 |
+| Word | Meaning |
 | --- | --- |
-| 支持 | EPLab 有意实现了这个行为，并由测试或示例覆盖。 |
-| 简化 | 常用情况能工作，少见元数据或边角行为没有实现。 |
-| 改变 | EPLab 特意选择了更安全或更清楚的规则。 |
-| 扩展 | EPLab 发明的友好语法；不要期待官方编译器接受。 |
-| 不支持 | 编译器会拒绝，或目前无法表示。 |
-| 本项目定义 | 公开资料不完整，所以 EPLab 选择并记录了确定规则。 |
+| Supported | EPLab intentionally implements this behavior and tests or examples exercise it. |
+| Simplified | The common case works, but uncommon metadata or edge behavior is omitted. |
+| Changed | EPLab deliberately uses a safer or clearer rule. |
+| Extension | Friendly syntax invented for EPLab; do not expect the official compiler to accept it. |
+| Unsupported | The compiler rejects it or cannot represent it. |
+| Defined here | Public information was incomplete, so EPLab chose and documented a deterministic rule. |
 
-### 文件和工具兼容性
+### File and tool compatibility
 
-| 范围 | 状态 | EPLab 的规则 |
+| Area | Status | EPLab rule |
 | --- | --- | --- |
-| `.易` 与 `.eplab` | 支持 | 普通 UTF-8 文本源文件，按行书写声明和语句；两种后缀意思相同。 |
-| 官方 `.e` / `.ec` 项目 | 不支持 | 它们是结构化/二进制项目容器。把后缀改成 `.易` 也不能打开。 |
-| 官方 IDE 窗口和可视化设计器 | 不支持 | EPLab 制作服务器端 LabAPI DLL，没有窗口或资源导入器。 |
-| 官方编译器/运行库 | 不使用 | EPLab 有自己的分词器、解析器、程序模型、检查器、运行时辅助代码和 C# 生成器。 |
-| 生成 C# | 支持 | 总会生成可阅读并带 `#line` 映射的源代码；合并查看文件以 `.cs.txt` 结尾，避免重复编译。 |
-| 原生机器码 | 不支持 | LabAPI 输出是托管的 .NET Framework 4.8 DLL。 |
-| 项目格式 | 支持 | 严格 JSON `project.eplabproj`，目前是 `"format": 1`。允许尾随逗号和未知属性，不允许注释。 |
-| 方言版本 | 支持 | 当前源文件需要 `.版本 2`；扩展目前只支持第 `1` 版。 |
+| `.易` and `.eplab` | Supported | Plain UTF-8 source text, one declaration or statement line at a time. Both suffixes mean the same thing. |
+| Official `.e` / `.ec` projects | Unsupported | Those are structured/binary project containers. Renaming one to `.易` will not work. |
+| Official IDE forms and visual designer | Unsupported | EPLab builds server-side LabAPI DLLs and has no Windows form/resource importer. |
+| Official compiler/runtime | Not used | EPLab has its own lexer, parser, model, checks, runtime helpers, and C# emitter. |
+| Generated C# | Supported | Always emitted as readable source with `#line` mappings; the combined view ends in `.cs.txt` so it is not compiled twice. |
+| Native machine-code output | Unsupported | LabAPI output is a managed .NET Framework 4.8 DLL. |
+| Project format | Supported | Strict JSON `project.eplabproj`, currently `"format": 1`. Trailing commas and unknown properties are accepted; comments are rejected. |
+| Dialect version | Supported | Source currently requires `.版本 2`; extension versions currently require `1`. |
 
-EPLab 不会从官方项目中导入密码、书签、折叠状态、资源表、图标、可视化组件、已编译模块或支持库元数据。
+EPLab does not import passwords, bookmarks, folded editor state, resource tables, icons, visual components, compiled modules, or support-library metadata from official project files.
 
-### 语言行为
+### Language behavior
 
-| 功能 | 状态 | EPLab 的准确行为 |
+| Feature | Status | Exact EPLab behavior |
 | --- | --- | --- |
-| 中文/Unicode 标识符 | 支持 | 保留 Unicode 写法。直接调用 CLR 时，类型和成员名称仍须和被引用 API 相符。 |
-| 全角标点 | 支持 | 分词器会规范常见全角括号、逗号、点号、冒号、引号、比较符和算术符。 |
-| 注释 | 支持 | 单引号 `'` 在字符串外、最外层括号外开始注释。 |
-| 基本类型 | 支持 | `字节型`、`短整数型`、`整数型`、`无符号整数型`、`长整数型`、`小数型`、`双精度小数型`、`逻辑型`、`文本型`、`字节集`、`日期时间型`、`通用型` 和 `子程序指针` 映射到文档中的 CLR 类型。 |
-| 省略类型 | 支持/简化 | 子程序省略返回类型时是 `无返回值`；字段和局部变量省略类型时默认 `整数型`；参数省略类型时默认 `通用型`。在 CLR 边界仍推荐明确写类型。 |
-| 文本 | 改变 | `文本型` 是 .NET Unicode `string`。EPLab 不模仿旧式字节文本或代码页意外。 |
-| 文本插值 | 扩展 | `$“你好，{名字}”` 变成可查看的 C# 插值文本；花括号里的表达式也必须在生成的 CLR 环境中有效。 |
-| 相等 | 支持 | 表达式里的 `=` 表示比较；语句最外层的 `=` 表示赋值。也接受 `==` 比较。 |
-| `≈` / `~=` | 支持 | 把两边按固定文化转成文本，再检查**右边文本是不是左边文本的开头**。它不是模糊数字比较。 |
-| 逻辑 `且` / `或` | 改变 | 像 C# 的 `&&`、`||` 一样短路，避免服务器插件做不需要的调用。 |
-| 算术 | 简化 | 使用 CLR 数字运算和溢出规则。`\` 生成除法；只有 CLR 操作数类型为整数时才是整数除法。 |
-| 转换 | 改变 | `转换类型` 是构建时检查、运行时不检查溢出的 CLR 强制转换；`安全转换类型` 使用受检查数字转换；`到文本` 使用固定文化的 `System.Convert`。不会模仿官方运行库的每一种隐式转换。 |
-| 日期时间常量 | 本项目定义 | 方括号内支持的格式用 `zh-CN` 文化解析。默认日期为 `1899-12-30 00:00:00`，Kind 未指定。 |
-| 空 | 改变 | `空`、`空对象`、`null` 变成 CLR `null`。类型后缀 `?` 在可行时使用 CLR 可空值/引用标注。 |
-| 可空参数 | 简化 | `可空` 使用 `EOptional<T>` 缺省标记。`是否为空` 能区分未传的可空参数；普通对象则检查 `null`。 |
-| 命名/ref/out 参数 | 支持 | `名字: 值`、`参考 值`/`传址 值`、`输出 值` 映射成 C# 命名、`ref`、`out` 参数。`ref` 和 `out` 互斥，也不能设为可空或填写默认值。 |
-| 省略实参 | 简化 | 空参数位置生成 `default`，不会查询官方支持库命令表。 |
-| 数组 | 支持 | 使用 `EArray<T>`，下标从 **1** 开始；下标 0 或越界会抛出错误。 |
-| 多维数组 | 支持 | 最后一维变化最快。也可以用一个下标访问扁平存储。`重定义数组` 保留仍装得下的扁平前缀。 |
-| 数组常量 | 支持 | `{1, 2, 3}` 创建一维、下标从 1 开始的 `EArray<T>`。 |
-| CLR 数组 | 扩展 | `CLR数组<T>` 是普通、下标从 0 开始的 CLR `T[]`。`到CLR数组` 和 `从CLR数组` 在边界明确复制，不会悄悄混用 1 起始与 0 起始下标。 |
-| 计次循环 | 支持 | `.计次循环首(count, counter)` 从 1 运行到 `count`，包含终点。 |
-| 变量循环 | 简化 | `.变量循环首(start, end, step, variable)` 会保留已声明计数变量的数字类型；省略计数变量时使用 `double`。范围包含终点，支持正负步长，步长为零时会在运行时报错。 |
-| 前测/后测循环 | 支持 | `.判断循环首/.判断循环尾` 和 `.循环判断首/.循环判断尾`。 |
-| 判断块 | 简化 | `.判断开始` 生成 `if / else if / else` 链，不生成跳转表。 |
-| 程序集/类 | 简化 | `.程序集` 生成 CLR 类，最多有一个基类。支持字段、具体子程序、构造、可见性和常用修饰符；静态类、抽象子程序、构造修饰符和分部类会被明确拒绝。 |
-| 数据类型/枚举 | 支持 | `.数据类型/.成员` 生成 CLR struct；`.枚举/.枚举值` 生成 CLR enum。 |
-| 常量 | 简化 | `.常量` 会为简单常量推断 CLR 类型并生成静态只读字段，不一定是 CLR 编译期常量；其他表达式使用 `dynamic`。`#类型.成员` 访问枚举/静态成员。 |
-| 静态局部变量 | 支持 | 提升为该子程序独有的私有静态字段。 |
-| 使用泛型 CLR 类型 | 需要 CLR 扩展 | 可以使用 `列表<文本型>`；目前不能声明新的泛型类型或泛型子程序。 |
-| 直接 CLR 调用 | 需要 CLR 扩展 | 外部解析、重载选择、可访问性和许多类型错误交给 C# 编译器检查。 |
-| DLL 命令 | 简化 | `.DLL命令` 生成普通 `DllImport`，支持库名和入口名；尚未开放自定义调用约定、编码、布局和封送属性。 |
-| 委托 | 简化 | `&子程序名` 生成方法组。不支持 lambda 或自定义委托声明。 |
-| 源码映射 | 支持 | 生成的声明/语句带 `#line`；能映射时，C# 错误会指向 `.易` 源文件。 |
+| Chinese/Unicode identifiers | Supported | Identifiers preserve Unicode spelling. Direct CLR type and member names must still match the referenced API. |
+| Full-width punctuation | Supported | Common full-width brackets, parentheses, comma, dot, colon, quotes, comparison and arithmetic symbols are normalized by the lexer. |
+| Comments | Supported | A single quote `'` starts a comment when it is outside a string and top-level bracket nesting. |
+| Primitive types | Supported | `字节型`, `短整数型`, `整数型`, `无符号整数型`, `长整数型`, `小数型`, `双精度小数型`, `逻辑型`, `文本型`, `字节集`, `日期时间型`, `通用型`, and `子程序指针` map to documented CLR types. |
+| Omitted types | Supported/simplified | An omitted method result is `无返回值`; omitted fields and local variables default to `整数型`; an omitted parameter type defaults to `通用型`. Writing the type is still recommended at CLR boundaries. |
+| Text | Changed | `文本型` is a .NET Unicode `string`. EPLab does not reproduce legacy byte-string/code-page accidents. |
+| Text interpolation | Extension | `$“你好，{名字}”` becomes an inspectable C# interpolated string. Its expressions must also be valid in the generated CLR context. |
+| Equality | Supported | `=` inside an expression means equality; a top-level `=` in a statement means assignment. `==` is also accepted for equality. |
+| `≈` / `~=` | Supported | Converts both operands to invariant text and asks whether the **right** text is a prefix of the **left** text. It is not fuzzy numeric equality. |
+| Boolean `且` / `或` | Changed | They short-circuit, like C# `&&` and `||`. This avoids unnecessary calls and surprises in server plugins. |
+| Arithmetic | Simplified | CLR numeric operators and overflow behavior are used. `\` becomes division; it is integer division only when CLR operand types make it integer division. |
+| Conversions | Changed | `转换类型` is a build-time-checked but runtime-unchecked CLR cast; `安全转换类型` uses a checked numeric cast; `到文本` uses invariant-culture `System.Convert`. EPLab does not imitate every implicit coercion of the official runtime. |
+| Date/time literal | Defined here | Supported bracket formats are parsed with the `zh-CN` culture. The default date is `1899-12-30 00:00:00`, unspecified kind. |
+| Null | Changed | `空`, `空对象`, and `null` become CLR `null`. A type suffix `?` uses CLR nullable/reference annotations where possible. |
+| Optional parameters | Simplified | `可空` uses an `EOptional<T>` missing-value sentinel. `是否为空` distinguishes a missing optional value; for ordinary objects it tests `null`. |
+| Named/ref/out arguments | Supported | `名字: 值`, `参考 值`/`传址 值`, and `输出 值` map to C# named, `ref`, and `out` arguments. `ref` and `out` are mutually exclusive and cannot be optional/defaulted. |
+| Omitted arguments | Simplified | An empty argument slot emits `default`; it does not consult an official support-library command table. |
+| Arrays | Supported | EPLab arrays are `EArray<T>`, start at index **1**, and throw for index 0 or an out-of-range index. |
+| Multidimensional arrays | Supported | Last dimension varies fastest. A single index may address the flattened storage. `重定义数组` preserves the flattened prefix that still fits. |
+| Array literals | Supported | `{1, 2, 3}` creates a one-dimensional, one-based `EArray<T>`. |
+| CLR arrays | Extension | `CLR数组<T>` is a normal zero-based CLR `T[]`. `到CLR数组` and `从CLR数组` make explicit copies at the boundary, so one-based and zero-based indexing are never silently mixed. |
+| Count loop | Supported | `.计次循环首(count, counter)` runs the counter from 1 through `count`, inclusive. |
+| Range loop | Simplified | `.变量循环首(start, end, step, variable)` preserves a declared counter's numeric type; an omitted counter uses `double`. It includes the end, supports positive or negative steps, and rejects a zero step at runtime. |
+| Pre/post-test loops | Supported | `.判断循环首/.判断循环尾` and `.循环判断首/.循环判断尾`. |
+| Choice block | Simplified | `.判断开始` becomes an `if / else if / else` chain, not a jump table. |
+| Classes/assemblies | Simplified | `.程序集` creates one CLR class with at most one base class. Fields, concrete methods, constructors, visibility, and common modifiers are supported; static classes, abstract methods, constructor modifiers, and partial classes are explicitly rejected. |
+| Data types/enums | Supported | `.数据类型/.成员` emits a CLR struct; `.枚举/.枚举值` emits a CLR enum. |
+| Constants | Simplified | `.常量` infers a CLR type for simple literals and emits a static readonly field, not necessarily a CLR compile-time constant. Other expressions use `dynamic`. `#类型.成员` addresses enum/static members. |
+| Static local | Supported | A static local is hoisted to a private static field unique to its method. |
+| Generic CLR type use | Supported with CLR extension | Types such as `列表<文本型>` can be used. Declaring a new generic type or generic method is unsupported. |
+| Direct CLR calls | Supported with CLR extension | External resolution, overload choice, accessibility, and many type errors are deliberately delegated to the C# compiler. |
+| DLL commands | Simplified | `.DLL命令` emits ordinary `DllImport` with a library and entry point. Custom calling conventions, encodings, layouts, and marshaling attributes are not exposed yet. |
+| Delegates | Simplified | `&子程序名` emits a method group. Lambda syntax and custom delegate declarations are unsupported. |
+| Source mapping | Supported | Generated declarations/statements use `#line`; C# diagnostics are reported against the `.易` source where possible. |
 
-### EPLab 扩展
+### EPLab extensions
 
-这些语法为了让服务器插件更清楚、更好用，不追求死板照搬历史语法：
+These constructs favor clear server-plugin code over strict historical syntax:
 
-- `.扩展 CLR 1`：允许被引用的 CLR 类型、命名空间、程序集、泛型、直接调用，以及 `创建对象`、`转换类型`、`是否类型`、`默认值`。
-- `.扩展 LabAPI 1`：允许插件信息、生成配置、事件订阅和命令适配器。
-- `.枚举循环首/.枚举循环尾`：`foreach` 循环。
-- `.尝试/.捕获/.最终/.尝试结束`：CLR 异常处理。
-- `.临时设置/.临时设置结束`：在 `finally` 中恢复原值，即使中间失败也会恢复。
-- `.锁定/.锁定结束`：映射到 `lock`。
-- `.使用资源/.使用资源结束`：映射到 `using`，结束时释放资源。
-- `$“...”` 插值、`?.`、`??` 使用清楚可预测的 CLR 含义。
+- `.扩展 CLR 1` allows referenced CLR types, namespaces, assemblies, generics, direct calls, `创建对象`, `转换类型`, `是否类型`, and `默认值`.
+- `.扩展 LabAPI 1` allows plugin metadata, generated configuration, event subscriptions, and command adapters.
+- `.枚举循环首/.枚举循环尾` is a `foreach` loop.
+- `.尝试/.捕获/.最终/.尝试结束` maps to CLR exception handling.
+- `.临时设置/.临时设置结束` restores a value in `finally`, even when the body fails.
+- `.锁定/.锁定结束` maps to `lock`.
+- `.使用资源/.使用资源结束` maps to `using` and disposes the resource.
+- `$“...”` interpolation, `?.`, and `??` use the predictable CLR meanings.
 
-这些是语言扩展，不是“偷偷粘贴 C#”的逃生口。EPLab 没有任意 C# 代码块指令。
+These extensions are source features, not raw C# escape blocks. EPLab does not provide a “paste arbitrary C# here” directive.
 
-### LabAPI 兼容性
+### LabAPI compatibility
 
-`"target": "labapi-net48"` 会生成继承 `Plugin<TConfig>` 的类，并以 `net48` 为目标，符合 LabAPI 项目指南。它会从所选游戏 Managed 文件夹自动引用 `LabApi.dll`、`Assembly-CSharp.dll`、`CommandSystem.Core.dll` 和 `YamlDotNet.dll`。
+`"target": "labapi-net48"` generates a class derived from `Plugin<TConfig>` and targets `net48`, which matches the LabAPI project guidance. It automatically references `LabApi.dll`, `Assembly-CSharp.dll`, `CommandSystem.Core.dll`, and `YamlDotNet.dll` from the selected game Managed folder.
 
-生成的基类/生命周期形状已对照 LabAPI 上游公开的 [`Plugin` 源码](https://github.com/northwood-studios/LabAPI/blob/84b0da472e3ce42bf86cb49bde8379d00605a8f6/LabApi/Loader/Features/Plugins/Plugin.cs)、[`Plugin<TConfig>` 源码](https://github.com/northwood-studios/LabAPI/blob/84b0da472e3ce42bf86cb49bde8379d00605a8f6/LabApi/Loader/Features/Plugins/Plugin%7BTConfig%7D.cs) 和下方项目指南。
+The generated base-class/lifecycle shape was checked against LabAPI's public upstream [`Plugin` source](https://github.com/northwood-studios/LabAPI/blob/84b0da472e3ce42bf86cb49bde8379d00605a8f6/LabApi/Loader/Features/Plugins/Plugin.cs), [`Plugin<TConfig>` source](https://github.com/northwood-studios/LabAPI/blob/84b0da472e3ce42bf86cb49bde8379d00605a8f6/LabApi/Loader/Features/Plugins/Plugin%7BTConfig%7D.cs), and the project guide linked below.
 
-目前支持的方便功能：
+Supported LabAPI conveniences:
 
-- 一个项目一份 `.LabAPI插件` 声明；
-- 生成名称、说明、作者、插件版本和所需 API 版本；
-- 用 `.配置项` 生成配置属性；
-- 用 `.订阅事件` 成对订阅/取消订阅事件；
-- 自动寻找 `插件启动`、`_插件启动` 或 `Enable`，以及 `插件停止`、`_插件停止` 或 `Disable`；
-- RA、玩家控制台和游戏控制台 `ICommand` 适配器；
-- 中英双语 `CommandContext` 属性（`Arguments/参数`、`Sender/发送者`、`Response/回复`、`Success/成功`）；
-- 可选的命令 `PlayerPermissions` 检查。
+- one project-wide `.LabAPI插件` declaration;
+- generated name, description, author, plugin version, and required API version;
+- generated configuration properties from `.配置项`;
+- event subscribe/unsubscribe pairs from `.订阅事件`;
+- optional lifecycle methods named `插件启动`, `_插件启动`, or `Enable`, and `插件停止`, `_插件停止`, or `Disable`;
+- RA, player-console, and game-console `ICommand` adapters;
+- bilingual `CommandContext` properties (`Arguments/参数`, `Sender/发送者`, `Response/回复`, `Success/成功`);
+- an optional `PlayerPermissions` check for a command.
 
-当前简化点：
+Current simplifications:
 
-- 事件路径和处理子程序签名由 C# 后端检查，不在编译器内附一份可能过时的 LabAPI 元数据；
-- 启用失败时会回滚事件、命令、入口实例和配置宿主；停用时也会在嵌套 `finally` 中清理这些状态；
-- 命令处理子程序接收一个 `CommandContext`；返回 `逻辑型` 时直接使用结果，无返回值时设置 `context.成功` 和 `context.回复`；
-- `.配置项` 可以生成 YamlDotNet 序列化别名和 `Description` 特性（中英文同时填写时优先中文）；可选数字最小/最大值会在插件启用时夹紧，无效、NaN 或无穷值则回到默认值；
-- EPLab 不会自动注册 Server-Specific Settings 或 HintServiceMeow；源代码要显式调用对应依赖的 API，并遵守各依赖的所有权规则；
-- 不会自动部署、重启服务器或应用 Harmony 补丁。普通本地 helper DLL 会复制到输出旁边；`game:` 和 `global:` 依赖仍由服务器提供，不会重复复制。
+- event paths and handler signatures are type-checked by the C# backend rather than a bundled snapshot of the LabAPI metadata;
+- failed enable rolls back events, commands, the entry instance, and hosted configuration; disable also clears them through nested `finally` blocks;
+- command handlers receive one `CommandContext`; a `逻辑型` result is used directly, while a no-result handler sets `context.成功` and `context.回复`;
+- `.配置项` can emit a YamlDotNet serialized-name alias and a `Description` attribute (Chinese description is preferred when both are present); optional numeric minimum/maximum fields are clamped when the plugin enables, and an invalid/NaN/infinite value falls back to the default;
+- EPLab does not register Server-Specific Settings or HintServiceMeow automatically; source must call the corresponding dependency APIs explicitly and respect their ownership rules;
+- no deployment, server restart, or Harmony patching happens automatically. Ordinary local helper DLLs are copied beside output; `game:` and `global:` dependencies remain server-provided and are not duplicated.
 
-SCP:SL 和 LabAPI 会更新。项目会根据构建时找到的真实本地 DLL 检查。EPLab 在 `build-info.json` 中记录它们的路径和 SHA-256；换服务器版本重新构建时，就能发现 API 变化。
+SCP:SL and LabAPI change over time. A project is checked against the exact local DLLs resolved at build time. EPLab records their paths and SHA-256 hashes in `build-info.json`; rebuilding against a different server version can reveal API changes.
 
-### 目前不支持
+### Not currently supported
 
-- 打开、保存、打包或编译官方 `.e` / `.ec` 容器；
-- 官方支持库（`.fne`）、编译好的易模块、COM/OCX 窗口、数据库组件或 IDE 资源设计器；
-- 接口、属性、索引器声明、事件、运算符、扩展方法、特性、分部类或多重继承；
-- 泛型声明、lambda、局部子程序、迭代器/yield、`await`、查询语法、不安全代码或任意 C# 块；
-- 对象/集合初始化器语法，以及辅助功能之外的模式匹配；
-- 条件编译、宏、包管理器、交互调试器或增量编译；
-- 精确重现未公开的内存布局、引用计数、文本编码、浮点边角、错误恢复或支持库副作用；
-- SCP:SL 客户端自定义 UI。LabAPI 插件仍然是服务器端的。
+- opening, saving, packing, or compiling official `.e` / `.ec` containers;
+- official support libraries (`.fne`), compiled 易 modules, COM/OCX forms, database components, or IDE resource designers;
+- interfaces, properties, indexer declarations, events, operators, extension methods, attributes, partial classes, or multiple inheritance;
+- generic declarations, lambdas, local procedures, iterators/yield, `await`, query syntax, unsafe code, or arbitrary C# blocks;
+- object/collection initializer syntax and pattern matching beyond the provided helpers;
+- conditional compilation, macros, a package manager, an interactive debugger, or incremental compilation;
+- exact reproduction of undocumented memory layout, reference counting, string encoding, floating-point corner cases, error recovery, or support-library side effects;
+- client-side custom SCP:SL UI. LabAPI plugins remain server-side.
 
-### 遇到未公开或专有行为怎么办
+### How unknown or proprietary behavior is handled
 
-公开说明不足时，EPLab 按下面顺序处理：
+When behavior is not publicly specified, EPLab follows this order:
 
-1. 优先使用可重复验证的公开行为和社区可读格式。
-2. 优先选择最容易讲清楚、对长期运行游戏服务器最安全的规则。
-3. 使用确定的 .NET 行为，不假装知道专有内部实现。
-4. 无法安全解释时报告编译错误。
-5. 在宣称兼容前，先把选择的规则写进本文。
+1. Prefer reproducible public behavior and community-readable formats.
+2. Prefer the rule that is simplest to explain and safest for a long-running game server.
+3. Use deterministic .NET behavior rather than pretending to know proprietary internals.
+4. Surface a compiler error when a safe interpretation is not possible.
+5. Add the chosen rule to this document before calling it compatible.
 
-这叫合理插值，不叫“已经确定逆向出了全部真相”。目标是做一门舒服、好教的语言，而且重要差异全部看得见。
+This is interpolation, not reverse-engineered certainty. The goal is a comfortable and teachable language, with every important difference visible.
 
-### 公开参考资料
+### Public references
 
-- [易语言官方网站与手册](https://www.eyuyan.com/)
-- [OpenEpl/TextECode](https://github.com/OpenEpl/TextECode) — 公开文本代码习惯
-- [OpenEpl/EProjectFile](https://github.com/OpenEpl/EProjectFile) — `.e/.ec` 结构化容器的公开说明
-- [OpenEpl/EplOnCppCore](https://github.com/OpenEpl/EplOnCppCore) — 独立翻译实现的先例
-- [aiqinxuancai/e-packager](https://github.com/aiqinxuancai/e-packager) — 现代可读的解包项目表示
-- [Northwood Studios LabAPI](https://github.com/northwood-studios/LabAPI) 与其[项目指南](https://github.com/northwood-studios/LabAPI/wiki/Creating-The-Project)
+- [易语言 official site and manuals](https://www.eyuyan.com/)
+- [OpenEpl/TextECode](https://github.com/OpenEpl/TextECode) — public textual-code conventions
+- [OpenEpl/EProjectFile](https://github.com/OpenEpl/EProjectFile) — public documentation of structured `.e/.ec` containers
+- [OpenEpl/EplOnCppCore](https://github.com/OpenEpl/EplOnCppCore) — an independent translation precedent
+- [aiqinxuancai/e-packager](https://github.com/aiqinxuancai/e-packager) — modern readable unpacked project representation
+- [Northwood Studios LabAPI](https://github.com/northwood-studios/LabAPI) and its [project guide](https://github.com/northwood-studios/LabAPI/wiki/Creating-The-Project)
 
-引用不代表这些项目为 EPLab 背书。请看 [THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md)。
+These are references, not a claim of endorsement. See [THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md).

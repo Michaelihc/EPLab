@@ -1,12 +1,10 @@
-# EPLab 语言参考
+# EPLab language reference
 
-[English](LANGUAGE.en.md)
+This describes the compiler in this folder today. It does not describe every feature of official 易语言. Read the [compatibility contract](COMPATIBILITY.md) for intentional differences.
 
-本文描述这个文件夹中当前的编译器，不代表官方易语言的全部功能。有意差异请阅读 [兼容约定](COMPATIBILITY.md)。
+### 1. Project file
 
-### 1. 项目文件
-
-EPLab 项目是 JSON 文件，一般叫 `project.eplabproj`。项目文件使用严格 JSON：允许尾随逗号，但不允许注释；未知的未来属性会在图形界面保存设置时保留。
+An EPLab project is a JSON file normally named `project.eplabproj`. Project files use strict JSON: trailing commas are accepted, comments are rejected, and unknown future properties survive GUI settings saves.
 
 ```json
 {
@@ -26,41 +24,41 @@ EPLab 项目是 JSON 文件，一般叫 `project.eplabproj`。项目文件使用
 }
 ```
 
-| 属性 | 含义 |
+| Property | Meaning |
 | --- | --- |
-| `format` | 目前必须是 `1`。 |
-| `name` | 输出程序集名称，请使用有效文件/程序集名。 |
-| `target` | 必须是 `labapi-net48`、`library-net48`、`library-net8` 或 `syntax-only`；其他值会报错。`.LabAPI插件` 声明必须使用 `labapi-net48`。 |
-| `rootNamespace` | 生成程序类型所在的 CLR 命名空间。 |
-| `sourceDirectories` | 递归寻找 `.易` 和 `.eplab`；路径相对于项目文件。 |
-| `references` | CLR DLL 引用，前缀见下方。 |
-| `managedDirectory` | 可选 SCP:SL `SCPSL_Data/Managed` 路径，会展开环境变量；相对路径以项目文件为准。 |
-| `globalDependenciesDirectory` | 可选 LabAPI `dependencies/global` 路径；相对路径以项目文件为准。 |
-| `outputDirectory` | 输出根目录；下面还会加入 `Release` 等配置名。 |
+| `format` | Must currently be `1`. |
+| `name` | Output assembly name. Use a valid file/assembly name. |
+| `target` | Must be `labapi-net48`, `library-net48`, `library-net8`, or `syntax-only`; any other value is an error. A `.LabAPI插件` declaration specifically requires `labapi-net48`. |
+| `rootNamespace` | CLR namespace containing generated program types. |
+| `sourceDirectories` | Recursively scanned for `.易` and `.eplab` files. Paths are relative to the project file. |
+| `references` | CLR DLL references. See the prefixes below. |
+| `managedDirectory` | Optional SCP:SL `SCPSL_Data/Managed` path. Environment variables are expanded, and a relative path is based at the project file. |
+| `globalDependenciesDirectory` | Optional LabAPI `dependencies/global` path. A relative path is based at the project file. |
+| `outputDirectory` | Output base folder; configuration such as `Release` is added beneath it. |
 
-引用写法：
+Reference forms:
 
 ```text
 game:LabApi              → <Managed>/LabApi.dll
 global:ServerKeybinds    → <dependencies/global>/ServerKeybinds.dll
-lib/MyHelper.dll         → 相对于 project.eplabproj
-D:\shared\MyHelper.dll   → 绝对路径
-%MY_LIBS%\MyHelper.dll   → 展开环境变量
+lib/MyHelper.dll         → relative to project.eplabproj
+D:\shared\MyHelper.dll   → absolute path
+%MY_LIBS%\MyHelper.dll   → environment variable is expanded
 ```
 
-Managed 文件夹按以下顺序选择：命令行 `--managed`、项目属性、`SCP_SL_MANAGED` 环境变量、Steam 专用服务器默认路径。全局依赖文件夹按命令行 `--dependencies`、项目属性、正常 `%APPDATA%` LabAPI 路径选择。
+The Managed folder is chosen in this order: command-line `--managed`, project property, `SCP_SL_MANAGED` environment variable, then the default Steam dedicated-server path. The global-dependencies folder uses command-line `--dependencies`, project property, then the normal `%APPDATA%` LabAPI path.
 
-`syntax-only` 主要给 `eplab check` 使用：它在 EPLab 解析、绑定和生成 C# 后停止，不运行 C# 编译器。其他目标的 `check` 会完成整个后端类型构建。
+`syntax-only` is intended for `eplab check`: it stops after EPLab parsing, binding, and C# generation instead of running the C# compiler. The other targets make `check` perform the full backend type-build.
 
-### 2. 源文件结构
+### 2. Source-file shape
 
-每个源文件都是普通 UTF-8，并需要：
+Every source file is plain UTF-8 and needs:
 
 ```e
 .版本 2
 ```
 
-后面可以写项目级指令：
+Useful project-level directives can appear after it:
 
 ```e
 .扩展 CLR 1
@@ -69,39 +67,39 @@ Managed 文件夹按以下顺序选择：命令行 `--managed`、项目属性、
 .引用程序集 “game:Mirror”
 ```
 
-- 目前只有 `CLR` 和 `LabAPI` 扩展，版本都是 `1`。
-- 命名空间引用变成 C# `using`。
-- 程序集引用使用和项目 JSON 一样的路径写法。
-- 所有源文件里的引用和扩展会合并。
-- 单引号开始注释：`' 这是注释`。
-- 空行是给人看的，不会结束子程序或代码块。
+- `CLR` and `LabAPI` are the only extension names today; their supported version is `1`.
+- Namespace imports become C# `using` directives.
+- Assembly imports use the same reference forms as the project JSON.
+- Imports and extensions from all source files are combined.
+- A single quote starts a comment: `' this is a comment`.
+- Blank lines are for people; they do not end a method or block.
 
-没有 `.程序集结束`。遇到下一个最外层声明时，当前子程序结束；控制流程块有明确结束标记。
+There is no `.程序集结束`. A method ends when the next top-level declaration begins. Control-flow blocks have explicit endings.
 
-### 3. 字符、名称和标点
+### 3. Characters, names, and punctuation
 
-名称以中文/Unicode 字母或 `_` 开头，后续还可以有数字。`@` 和 `$` 在文档规定的用途之外会被拒绝，例如 `$“...”` 中的 `$` 只能作为插值前缀。关键字取决于位置，普通位置通常仍可当名称。
+Names start with a Chinese/Unicode letter or `_`; later characters may also be digits. `@` and `$` are rejected outside their documented uses, such as the `$“...”` interpolation prefix. Keywords are contextual: a name is usually only special where its syntax expects it.
 
-两种写法都可以：
+Both styles work:
 
 ```e
 日志.信息($"hello")
 日志。信息（$“你好”）
 ```
 
-常用全角替代包括 `（）【】｛｝，。：？！＋－＊／＼％＝＜＞` 和中文弯引号。直接调用 CLR 时，如果 API 使用英文名称，就要照它的写法。
+Supported common full-width alternatives include `（）【】｛｝，。：？！＋－＊／＼％＝＜＞` and curly Chinese quotes. Use ordinary ASCII for CLR names when the referenced API spells them that way.
 
-文本可以用直引号或弯引号。支持 `\n`、`\r`、`\t`、`\\`、`\"` 转义；连续写两个配对引号也能放入一个引号。前面加 `$` 表示插值：
+Strings accept straight or curly quotes. `\n`, `\r`, `\t`, `\\`, and `\"` escapes are understood. Doubling the matching quote also places a quote in the value. Prefix a string with `$` for interpolation:
 
 ```e
 $“玩家 {玩家.Nickname} 已加入；分数 {分数:0.00}”
 ```
 
-插值孔会按 EPLab 表达式解析，所以友好名称和普通诊断仍然有效。最外层冒号后面的文本会作为 CLR 格式字符串。
+Interpolation holes are parsed as EPLab expressions, so friendly names and normal diagnostics still work. Text after a top-level colon is passed as the CLR format string.
 
-### 4. 类型
+### 4. Types
 
-| EPLab 名称 | CLR 输出 |
+| EPLab name | CLR output |
 | --- | --- |
 | `无返回值` | `void` |
 | `字节型` | `byte` |
@@ -123,18 +121,18 @@ $“玩家 {玩家.Nickname} 已加入；分数 {分数:0.00}”
 | `集合<T>` | `System.Collections.Generic.HashSet<T>` |
 | `只读列表<T>` | `System.Collections.Generic.IReadOnlyList<T>` |
 | `玩家` | `LabApi.Features.Wrappers.Player` |
-| `CLR数组<T>` | 下标从 0 开始的 CLR `T[]` |
+| `CLR数组<T>` | zero-based CLR `T[]` |
 
-也支持 `int`、`Int32`、`string`、`Boolean`、`DateTime` 等英文 CLR 别名。启用 `.扩展 CLR 1` 后，可以使用任何已引用的完整类型。类型中的中文书名号 `《》` 可以代替 `< >`；末尾 `?` 表示可空类型。
+English CLR aliases such as `int`, `Int32`, `string`, `Boolean`, and `DateTime` also work. With `.扩展 CLR 1`, any referenced qualified type may be used. Chinese angle brackets `《》` may replace `< >` in a type. A trailing `?` asks for a nullable type.
 
-### 5. 声明
+### 5. Declarations
 
-指令字段用半角或中文逗号分开。空字段会保留位置。
+Directive fields are separated by ASCII or Chinese commas. Empty fields keep their position.
 
-#### 类/程序集
+#### Class/assembly
 
 ```text
-.程序集 名称, 基类, 可见性和修饰符
+.程序集 name, base-type, visibility and modifiers
 ```
 
 ```e
@@ -142,18 +140,18 @@ $“玩家 {玩家.Nickname} 已加入；分数 {分数:0.00}”
 .程序集变量 总分, 整数型, 私有, , 0
 ```
 
-可见性：`公开/public`、`保护/protected`、`内部/internal`、`私有/private`。
+Visibility words: `公开/public`, `保护/protected`, `内部/internal`, `私有/private`.
 
-声明修饰符包括 `静态/static`、`只读/readonly`、`虚/virtual`、`重写/override`、`密封/sealed` 和 `异步/async`，但每种只能用在有意义的位置。EPLab 会在生成 C# 前报告不支持的组合。EPLab 1 明确拒绝静态类、抽象子程序、构造修饰符和 `分部/partial` 类；抽象类本身仍可声明。
+Declaration modifiers include `静态/static`, `只读/readonly`, `虚/virtual`, `重写/override`, `密封/sealed`, and `异步/async`, but each is accepted only where it has a defined meaning. EPLab reports unsupported combinations before generating C#. EPLab 1 explicitly rejects static classes, abstract methods, constructor modifiers, and `分部/partial` classes; an abstract class itself may still be declared.
 
-#### 程序集变量与全局变量
+#### Fields and global variables
 
 ```text
-.程序集变量 名称, 类型, 可见性/修饰符, 数组形状, 初始值
-.全局变量   名称, 类型, 可见性/修饰符, 数组形状, 初始值
+.程序集变量 name, type, visibility/modifiers, array-shape, initializer
+.全局变量   name, type, visibility/modifiers, array-shape, initializer
 ```
 
-全局变量是静态的。多维形状要加引号，避免里面的逗号被当成指令字段：
+Global variables are static. Quote a multidimensional shape so its commas stay in one directive field:
 
 ```e
 .程序集变量 名字, 文本型, 公开, , “小明”
@@ -161,12 +159,12 @@ $“玩家 {玩家.Nickname} 已加入；分数 {分数:0.00}”
 .全局变量 在线人数, 整数型, 内部, , 0
 ```
 
-#### 子程序、参数、局部变量和构造
+#### Methods, parameters, locals, and constructors
 
 ```text
-.子程序 名称, 返回类型, 可见性, 修饰符
-.参数 名称, 类型, 修饰符, 默认值
-.局部变量 名称, 类型, 修饰符, 数组形状, 初始值
+.子程序 name, return-type, visibility, modifiers
+.参数 name, type, modifiers, default-value
+.局部变量 name, type, modifiers, array-shape, initializer
 ```
 
 ```e
@@ -179,18 +177,18 @@ $“玩家 {玩家.Nickname} 已加入；分数 {分数:0.00}”
 返回（答案）
 ```
 
-参数修饰符：`可空/optional`、`参考/ref` 或 `传址`、`输出/out`、`数组/array`、`参数数组/params`。`静态` 局部变量会在多次调用间保留值。
+Parameter modifiers are `可空/optional`, `参考/ref` or `传址`, `输出/out`, `数组/array`, and `参数数组/params`. A `静态` local keeps its value between calls.
 
-生成 C# 以前会检查这些参数规则：
+Parameter rules are checked before C# generation:
 
-- `参考/ref` 和 `输出/out` 不能同时使用，也不能设为可空或填写默认值；
-- `参数数组/params` 必须放在最后，不能可空，也不能填写默认值；
-- 必填参数不能放在可空/有默认值的参数后面；
-- EPLab 的 `可空` 缺省标记不能同时填写显式默认值。
+- `参考/ref` and `输出/out` cannot appear together, and neither may be optional or have a default;
+- `参数数组/params` must be last and cannot be optional or have a default;
+- a required parameter cannot follow an optional/defaulted parameter;
+- EPLab's `可空` missing-value sentinel cannot also have an explicit default.
 
-省略类型时，字段或局部变量默认 `整数型`，参数默认 `通用型`，子程序返回类型默认 `无返回值`。
+If a type is omitted, a field or local defaults to `整数型`, a parameter defaults to `通用型`, and a method result defaults to `无返回值`.
 
-构造使用 `.构造子程序`；写出的名称只是说明，因为生成 C# 会使用所在类名：
+A constructor uses `.构造子程序`; its written name is descriptive because generated C# uses the containing class name:
 
 ```e
 .构造子程序 创建, , 公开
@@ -199,9 +197,9 @@ $“玩家 {玩家.Nickname} 已加入；分数 {分数:0.00}”
 总分 ＝ 初始值
 ```
 
-构造目前只接受可见性，不接受静态、异步等声明修饰符。
+Constructors currently accept visibility only, not static, async, or other declaration modifiers.
 
-#### 类似 struct 的数据类型
+#### Struct-like data type
 
 ```e
 .数据类型 坐标, 公开
@@ -209,7 +207,7 @@ $“玩家 {玩家.Nickname} 已加入；分数 {分数:0.00}”
 .成员 Y, 小数型
 ```
 
-#### 枚举
+#### Enum
 
 ```e
 .枚举 方向, 公开
@@ -219,29 +217,29 @@ $“玩家 {玩家.Nickname} 已加入；分数 {分数:0.00}”
 .枚举值 西, 3
 ```
 
-用 `#方向.北` 引用枚举值。
+Use `#方向.北` to name an enum member.
 
-#### 常量
+#### Constant
 
 ```e
 .常量 最大人数, 50, 公开
 ```
 
-特殊无类型常量有 `#换行符` 和 `#制表符`。
+Special unqualified constants are `#换行符` and `#制表符`.
 
-简单常量会推断 CLR 类型，其他常量表达式使用 `dynamic`。`.常量` 是静态只读字段，不一定是 CLR 编译期常量。
+Simple literal constants infer a CLR type; other constant expressions use `dynamic`. A `.常量` is a static readonly field, not necessarily a CLR compile-time constant.
 
-#### DLL 导入
+#### DLL import
 
 ```e
 .DLL命令 取滴答数, 无符号整数型, “kernel32.dll”, “GetTickCount”, 公开
 ```
 
-紧接着的 `.参数` 会变成原生参数。目前故意只开放小范围 `DllImport`；高级封送尚未加入方言。
+Following `.参数` lines become native parameters. This is deliberately a small `DllImport` surface; advanced marshaling is not yet part of the dialect.
 
-### 6. 表达式
+### 6. Expressions
 
-常量：
+Literals:
 
 ```e
 123
@@ -259,7 +257,7 @@ $“分数：{分数}”
 {1, 2, 3}
 ```
 
-后缀表达式：
+Postfix expressions:
 
 ```e
 对象.成员
@@ -269,35 +267,35 @@ $“分数：{分数}”
 矩阵[2, 3]
 ```
 
-调用参数可以写 `参考 变量`、`传址 变量` 或 `输出 变量`。空参数位置会生成 `default`。
+Call arguments can be `参考 变量`, `传址 变量`, or `输出 变量`. An empty argument position emits `default`.
 
-运算符从强到弱：
+Operators, from stronger to weaker:
 
-| 组 | 写法 |
+| Group | Spellings |
 | --- | --- |
-| 一元 | `+`、`-`、`非`、`NOT`、`!`、`~` |
-| 乘除 | `*`、`×`、`/`、`÷` |
-| 整数式除法 | `\` |
-| 余数 | `模`、`MOD`、`%` |
-| 加减 | `+`、`-` |
-| 位移 | `左移`、`右移`、`<<`、`>>` |
-| 比较 | `=`、`==`、`!=`、`<>`、`≠`、`<`、`<=`、`≤`、`>`、`>=`、`≥`、`≈`、`~=` |
-| 位运算 | 先 `位与`/`&`，再 `位异或`/`^`，再 `位或`/`|` |
-| 逻辑 | 先 `且`/`AND`/`&&`，再 `或`/`OR`/`||` |
-| 空合并 | `??` |
+| Unary | `+`, `-`, `非`, `NOT`, `!`, `~` |
+| Multiply | `*`, `×`, `/`, `÷` |
+| Integer-style divide | `\` |
+| Remainder | `模`, `MOD`, `%` |
+| Add | `+`, `-` |
+| Shift | `左移`, `右移`, `<<`, `>>` |
+| Compare | `=`, `==`, `!=`, `<>`, `≠`, `<`, `<=`, `≤`, `>`, `>=`, `≥`, `≈`, `~=` |
+| Bitwise | `位与`/`&`, then `位异或`/`^`, then `位或`/`|` |
+| Boolean | `且`/`AND`/`&&`, then `或`/`OR`/`||` |
+| Null coalesce | `??` |
 
-只有语句最外层的 `=` 会识别成赋值：
+Assignment is recognized only when `=` is at the top level of a statement:
 
 ```e
 总分 ＝ 总分 ＋ 1
 .如果（总分 ＝ 10）
 ```
 
-第一行是赋值；括号内是比较。
+In the first line `=` assigns; inside the parentheses it compares.
 
-### 7. 语句与代码块
+### 7. Statements and blocks
 
-#### 如果
+#### If
 
 ```e
 .如果（分数 ≥ 10）
@@ -307,9 +305,9 @@ $“分数：{分数}”
 .如果结束
 ```
 
-`.如果真/.如果真结束` 是没有 `.否则` 的版本。
+`.如果真/.如果真结束` is the same without an `else` branch.
 
-#### 计次循环
+#### Count loop
 
 ```e
 .计次循环首（3，次数）
@@ -317,9 +315,9 @@ $“分数：{分数}”
 .计次循环尾（）
 ```
 
-`次数` 依次得到 1、2、3；计次变量可以省略。
+`次数` receives 1, 2, then 3. The counter can be omitted.
 
-#### 数字范围循环
+#### Numeric range loop
 
 ```e
 .变量循环首（0，10，2，数值）
@@ -327,21 +325,21 @@ $“分数：{分数}”
 .变量循环尾（）
 ```
 
-范围包含终点。如果提前声明了 `数值`，开始值、结束值、步长和递增都会保留它的数字类型；省略计数变量时使用 `double`。支持正负步长；步长为零会报错，不会无限循环。
+The range is inclusive. If `数值` was declared, its numeric type is preserved for the start, end, step, and increment; if the counter is omitted, EPLab uses `double`. Positive and negative steps work, while a zero step throws an error instead of looping forever.
 
-#### 前测和后测循环
+#### While and do/while
 
 ```e
 .判断循环首（还要继续）
-' 循环体
+' body
 .判断循环尾（）
 
 .循环判断首（）
-' 先运行一次，再判断
+' body runs once before the test
 .循环判断尾（还要继续）
 ```
 
-#### 枚举循环扩展
+#### Foreach extension
 
 ```e
 .枚举循环首（玩家，玩家，Player.List）
@@ -349,9 +347,9 @@ $“分数：{分数}”
 .枚举循环尾（）
 ```
 
-字段依次为变量名、可选类型、集合；只有两个字段时表示变量和集合。
+Fields are variable name, optional type, then collection. With two fields they are variable and collection.
 
-#### 多分支判断
+#### Multi-branch choice
 
 ```e
 .判断开始
@@ -364,7 +362,7 @@ $“分数：{分数}”
 .判断结束
 ```
 
-#### 异常
+#### Exceptions
 
 ```e
 .尝试
@@ -376,69 +374,69 @@ $“分数：{分数}”
 .尝试结束
 ```
 
-可以有多个 `.捕获`；`.最终` 可以省略。
+There may be several `.捕获` blocks. `.最终` is optional.
 
-#### 安全辅助块
+#### Safe helper blocks
 
 ```e
 .临时设置（服务器.锁定，真）
-' finally 中恢复原值
+' old value is restored in finally
 .临时设置结束
 
 .锁定（同步对象）
-' 同一时间只允许一个线程
+' one thread at a time
 .锁定结束
 
 .使用资源（流，创建对象（FileStream，路径，#FileMode.Open））
-' 结束时释放流
+' stream is disposed at the end
 .使用资源结束
 ```
 
-#### 控制子程序的伪调用
+#### Method-control pseudo-calls
 
-| 源代码 | 含义 |
+| Source | Meaning |
 | --- | --- |
 | `返回（）` / `返回（值）` | `return` |
 | `跳出循环（）` | `break` |
 | `到循环尾（）` | `continue` |
 | `抛出（异常）` | `throw` |
-| `重定义数组（数组, 维数...）` | 改变 `EArray<T>` 大小 |
+| `重定义数组（数组, 维数...）` | resize an `EArray<T>` |
 
-### 8. 内置辅助功能和别名
+### 8. Built-in helpers and aliases
 
-| 源代码 | 生成含义 |
+| Source | Generated meaning |
 | --- | --- |
 | `创建对象（类型, 参数...）` | `new 类型(参数...)` |
-| `转换类型（类型, 值）` | 运行时不检查溢出的 CLR 强制转换 |
-| `安全转换类型（类型, 值）` | 受检查的 CLR 数字转换 |
-| `是否类型（值, 类型）` | CLR `is` 检查 |
+| `转换类型（类型, 值）` | runtime-unchecked CLR cast |
+| `安全转换类型（类型, 值）` | checked CLR numeric cast |
+| `是否类型（值, 类型）` | CLR `is` test |
 | `默认值（类型）` | `default(类型)` |
-| `选择（条件, 真值, 假值）` | 条件表达式 |
-| `字符（值）` | 转成单字符文本 |
-| `到文本（值）` | 用固定文化转文本 |
+| `选择（条件, 真值, 假值）` | conditional expression |
+| `字符（值）` | convert to one-character string |
+| `到文本（值）` | invariant-culture text conversion |
 | `取数组成员数（数组）` | `.Count` |
 | `取文本长度（文本）` | `.Length` |
-| `是否为空（值）` | 未传可空参数或 CLR null 检查 |
-| `到CLR数组（易数组）` | 把 `EArray<T>` 复制成 `T[]` |
-| `从CLR数组（集合）` | 把可枚举集合复制成 `EArray<T>` |
-| `&子程序名` | 方法组/委托表达式 |
+| `是否为空（值）` | missing optional or CLR null test |
+| `到CLR数组（易数组）` | copy an `EArray<T>` to `T[]` |
+| `从CLR数组（集合）` | copy an enumerable into `EArray<T>` |
+| `&子程序名` | method-group/delegate expression |
 
-友好名称：
+Friendly names:
 
 | EPLab | CLR |
 | --- | --- |
 | `日志` | `LabApi.Features.Console.Logger` |
-| `配置` | 当前生成的 LabAPI 配置对象 |
+| `配置` | the current generated LabAPI config object |
 | `环境` | `System.Environment` |
 | `.信息/.警告/.错误` | `.Info/.Warn/.Error` |
 | `.数量/.长度` | `.Count/.Length` |
 | `.加入/.删除/.清空` | `.Add/.Remove/.Clear` |
 
-其他 CLR 名称原样通过。
+Other CLR names pass through unchanged.
 
-### 9. 数组
+### 9. Arrays
 
-声明里的数组形状会创建 `EArray<T>`：
+An array shape in a declaration creates an `EArray<T>`:
 
 ```e
 .局部变量 一维, 整数型, , “5”
@@ -446,29 +444,29 @@ $“分数：{分数}”
 .局部变量 可变, 小数型, , “0”
 ```
 
-- `EArray<T>` 的有效下标从 1 开始。
-- `二维[1, 1]` 是第一个格子。
-- `二维[6]` 是把相同存储当成一维访问。
-- `取数组成员数（二维）` 返回格子总数。
-- `重定义数组（可变，10）` 改变大小并保留装得下的前缀。
-- 只有一维数组可以用 `.加入` 增长。
+- Valid `EArray<T>` indices start at 1.
+- `二维[1, 1]` is the first cell.
+- `二维[6]` is the same storage addressed as a flat array.
+- `取数组成员数（二维）` returns the total cell count.
+- `重定义数组（可变，10）` changes its size and preserves the prefix that fits.
+- Only a one-dimensional array may grow with `.加入`.
 
-只有外部 API 确实需要普通 0 起始 CLR 数组时，才使用 `CLR数组<类型>`（也可写 `CLR数组《类型》`）。`到CLR数组（易数组）` 复制成 `T[]`；`从CLR数组（CLR数组）` 复制回 1 起始 `EArray<T>`。明确复制能避免悄悄出现差一位错误。
+Use `CLR数组<类型>` (or `CLR数组《类型》`) only when an external API really expects a normal zero-based CLR array. `到CLR数组（易数组）` copies to `T[]`; `从CLR数组（CLR数组）` copies back to a one-based `EArray<T>`. The explicit copy prevents an accidental off-by-one change.
 
-### 10. LabAPI 声明
+### 10. LabAPI declarations
 
-含 LabAPI 声明的项目需要 `.扩展 LabAPI 1` 和 `labapi-net48` 目标。
+A project with LabAPI declarations needs `.扩展 LabAPI 1` and target `labapi-net48`.
 
 ```e
 .LabAPI插件 主程序集
 .插件名称 “My Plugin”
-.插件说明 “它会做什么”
-.插件作者 “名字”
+.插件说明 “What it does”
+.插件作者 “Name”
 .插件版本 “1.2.3”
 .所需API版本 “1.1.0”
 ```
 
-`.LabAPI插件` 可选的第二个字段是自定义配置类。留空时自动生成配置：
+The optional second `.LabAPI插件` field names a custom config class. Leave it empty to generate config:
 
 ```e
 .配置项 Enabled, 逻辑型, 真
@@ -476,28 +474,28 @@ $“分数：{分数}”
 .配置项 Speed, 小数型, 1.0, “speed”, “Speed”, “速度”, 0.1, 10.0
 ```
 
-字段依次是名称、类型、默认值、序列化名称、英文说明、中文说明、可选最小值、可选最大值。序列化名称会生成 YamlDotNet 别名。会生成一个 `Description` 特性，中英文同时填写时优先中文。数字限制会在插件启用时夹紧；无法转换、NaN/无穷或验证失败时回到默认值。
+The fields are name, type, default, serialized name, English description, Chinese description, optional minimum, and optional maximum. The serialized name becomes a YamlDotNet alias. One `Description` attribute is emitted, preferring Chinese when both descriptions are present. Numeric limits are clamped when the plugin enables; a value that cannot be converted, is NaN/infinite, or otherwise fails validation falls back to the default.
 
-订阅事件：
+Subscribe to an event:
 
 ```e
 .订阅事件 PlayerEvents.Joined, 玩家加入
 ```
 
-EPLab 在 `Enable` 时订阅、`Disable` 时取消。指定的子程序必须存在，并有与委托兼容的 CLR 参数。
+EPLab subscribes in `Enable` and unsubscribes in `Disable`. The named method must exist and have the delegate-compatible CLR signature.
 
-生命周期子程序可以不写；写了以后，同一启动/停止名称组只能匹配一个，必须是实例子程序、无参数、返回 `无返回值`。
+A lifecycle method is optional, but when present it must be the only matching lifecycle name in its group, be an instance method, take no parameters, and return `无返回值`.
 
-命令：
+Commands:
 
 ```text
-.RA命令 名称, 别名1|别名2, 说明, 处理子程序, 可选 PlayerPermissions 值
-.玩家命令 名称, 别名, 说明, 处理子程序, 可选权限
-.游戏控制台命令 名称, 别名, 说明, 处理子程序, 可选权限
+.RA命令 name, alias1|alias2, description, handler, optional PlayerPermissions member
+.玩家命令 name, aliases, description, handler, optional permission
+.游戏控制台命令 name, aliases, description, handler, optional permission
 ```
 
 ```e
-.RA命令 greet, hi|hello, 打招呼, 处理问候, PlayersManagement
+.RA命令 greet, hi|hello, Say hello, 处理问候, PlayersManagement
 
 .子程序 处理问候, 无返回值, 公开
 .参数 命令, 命令上下文
@@ -506,4 +504,4 @@ EPLab 在 `Enable` 时订阅、`Disable` 时取消。指定的子程序必须存
 命令.成功 ＝ 真
 ```
 
-处理子程序返回 `逻辑型` 时，结果直接作为命令成功状态；否则设置 `命令.成功` 和 `命令.回复`。
+A handler returning `逻辑型` supplies command success directly. Otherwise set `命令.成功` and `命令.回复`.

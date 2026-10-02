@@ -1,77 +1,75 @@
 # EPLab
 
-[English](README.en.md)
+> **Unofficial and independent.** EPLab is an 易语言-inspired, source-compatible dialect for writing server-side LabAPI plugins. It is not the official 易语言 product, compiler, runtime, or file format, and it is not affiliated with its publisher.
 
-> **非官方、独立实现。** EPLab 是受易语言启发、用于编写服务器端 LabAPI 插件的源码兼容方言。它不是官方易语言产品、编译器、运行库或文件格式，也不隶属于其发布方。
-
-EPLab 让你用亲切的中文源代码写服务器端 LabAPI 插件。它先把代码变成可查看的 C#，再编译成普通的 SCP:SL 插件 DLL。
+EPLab lets you write friendly Chinese source code, inspect what it means, and build a normal SCP:SL LabAPI plugin DLL.
 
 ```text
-UTF-8 的 .易 / .eplab 源代码
-              ↓
-分词 → 解析 → 检查过的程序模型
-              ↓
-可阅读、可映射回原行的 C#
-              ↓
+UTF-8 .易 / .eplab source
+          ↓
+lexer → parser → checked program model
+          ↓
+readable, source-mapped C#
+          ↓
 dotnet build → .NET Framework 4.8 LabAPI DLL
 ```
 
-C# 这一步是特意保留的：你能看懂编译器做了什么，普通 C# 编译器也能检查 CLR 和 LabAPI 调用。图形界面里有 **查看生成的 C#** 按钮；出现错误时，位置会指回原来的 `.易` 行。
+The C# step is intentional. It makes the result understandable and lets the ordinary C# compiler check CLR and LabAPI calls. The GUI has a **View generated C#** button, and compiler errors point back to the original `.易` line.
 
-### 需要准备什么
+### What you need
 
-- 安装 [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)。
-- 小图形界面使用 Windows WinForms；编译器和命令行项目本身使用 .NET 8。
-- 要制作 LabAPI DLL，需要安装 SCP:SL 专用服务器，让 EPLab 能引用 `SCPSL_Data/Managed` 里的程序集。可以阅读 [LabAPI 官方项目指南](https://github.com/northwood-studios/LabAPI/wiki/Creating-The-Project)。
+- The [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
+- Windows for the small WinForms GUI. The compiler and command-line projects themselves target .NET 8.
+- For a LabAPI DLL, an installed SCP:SL Dedicated Server so EPLab can reference its `SCPSL_Data/Managed` assemblies. See the [official LabAPI project guide](https://github.com/northwood-studios/LabAPI/wiki/Creating-The-Project).
 
-**不需要**安装官方易语言编译器。EPLab 不会偷偷调用官方编译器或运行库。
+The official 易语言 compiler is **not** needed. EPLab does not load its runtime or call it behind the scenes.
 
-### 编译并打开图形界面
+### Build and open the GUI
 
-最简单的方法：在资源管理器中双击 `run-gui.cmd`。它会编译需要的内容并打开图形界面。
+The easiest route is to double-click `run-gui.cmd` in File Explorer. It builds what it needs and opens the GUI.
 
-如果你更喜欢 PowerShell，也可以在 `EPLab` 文件夹里运行：
+If you prefer PowerShell, run these commands inside the `EPLab` folder:
 
 ```powershell
 dotnet build EPLab.sln -c Release
 dotnet run --project src/EPLab.Gui -c Release
 ```
 
-图形界面故意做得很小：
+The GUI deliberately stays small:
 
-1. **新建**：在空文件夹里制作一个“你好”项目。
-2. **打开**：打开 `project.eplabproj`。
-3. 修改 `.易` 或 `.eplab` 文件，再按 **保存**。
-4. **检查**：解析代码，并请 C# 编译器检查类型和调用。
-5. **编译 DLL**：制作插件。
-6. **查看生成的 C#**：看看 EPLab 到底生成了什么。
-7. **项目设置**：默认路径不对时，用选择框找到游戏 Managed 和 LabAPI 全局依赖文件夹。
+1. **New** makes a tiny hello project in an empty folder.
+2. **Open** opens `project.eplabproj`.
+3. Edit a `.易` or `.eplab` file and press **Save**.
+4. **Check** parses the source and asks the C# compiler to type-check it.
+5. **Build DLL** creates the plugin.
+6. **View generated C#** shows exactly what EPLab produced.
+7. **Project settings** lets you browse for the game Managed and LabAPI global-dependencies folders when the defaults are wrong.
 
-双击“问题”中的一项，可以跳到出错的源代码行。语言选择框能在中文和 English 之间切换界面及诊断信息。
+Double-click a problem to jump to its source line. The language selector changes the GUI and diagnostics between Chinese and English.
 
-### 命令行
+### Command line
 
 ```powershell
-# 制作入门项目
+# Make a starter project
 dotnet run --project src/EPLab.Cli -c Release -- new MyFirstPlugin
 
-# 检查；--cn 表示使用中文消息
+# Check it; --cn selects Chinese messages
 dotnet run --project src/EPLab.Cli -c Release -- check MyFirstPlugin/project.eplabproj --cn
 
-# 编译 DLL
+# Build its DLL
 dotnet run --project src/EPLab.Cli -c Release -- build MyFirstPlugin/project.eplabproj --cn
 ```
 
-如果 SCP:SL 安装在不常见的位置，可以用图形界面的 **项目设置**，或在命令行加上：
+If SCP:SL is installed somewhere unusual, use **Project settings** in the GUI or add:
 
 ```text
---managed "D:\你的路径\SCPSL_Data\Managed"
---dependencies "D:\你的路径\LabAPI\dependencies\global"
+--managed "D:\path\to\SCPSL_Data\Managed"
+--dependencies "D:\path\to\LabAPI\dependencies\global"
 ```
 
-`check` 会真的做类型检查，不只是找错别字，所以 LabAPI 项目仍然需要所引用的游戏程序集。
+`check` is a real type-check, not just a spelling check, so a LabAPI project still needs its referenced game assemblies.
 
-### 一个很小的源文件
+### A tiny source file
 
 ```e
 .版本 2
@@ -93,35 +91,33 @@ dotnet run --project src/EPLab.Cli -c Release -- build MyFirstPlugin/project.epl
 日志.信息（$“你好，{事件.Player.Nickname}！”）
 ```
 
-源文件是普通 UTF-8 文本。这里的 `.易` 是文本扩展名，**不是**官方二进制 `.e` 项目。半角和全角标点都可以使用。
+Source files are plain UTF-8 text. `.易` here is a text extension; it is **not** the official binary `.e` project format. Straight and full-width punctuation are both welcome.
 
-### 生成的文件在哪里
+### Where files go
 
-- 生成的 C#：`obj/eplab/Release/EPLab.All.Generated.cs.txt`
-- 引用哈希和构建信息：`obj/eplab/Release/build-info.json`
-- 编译好的 DLL：`bin/Release/<项目名称>.dll`
+- Generated C#: `obj/eplab/Release/EPLab.All.Generated.cs.txt`
+- Reference hashes and build facts: `obj/eplab/Release/build-info.json`
+- Built DLL: `bin/Release/<project-name>.dll`
 
-EPLab 不会悄悄部署插件，也不会重启服务器。准备好以后，才把 DLL 复制到正确端口的 LabAPI 插件文件夹，再用正常方式重启那台服务器。
+EPLab does not silently deploy or restart a server. Copy a finished DLL to the LabAPI plugin folder for the correct server port only when you are ready, then restart that server normally.
 
-### 示例与验证
+### Examples and build boundaries
 
-- [`examples/HelloLabApi`](examples/HelloLabApi) 是最小的真实 LabAPI 插件。
-- [`examples/ScriptedWarhead`](examples/ScriptedWarhead/README.md) 把 DMS/Omega 时间线、配置选择、语言/备用流程和 RA 命令留在 `.易`；窄桥接只处理 MEC、原生设施/核弹/玩家、ffmpeg 和 SpeakerToy 操作。
-- [`examples/SpinBot`](examples/SpinBot/README.zh-CN.md) 把配置、生命周期、旋转/状态数学、持久授权、ServerKeybinds API 3 界面和 RA 命令留在 `.易`；Cement 的引擎侧 C# 源码有意保持私有，不包含在这个公开仓库中。
+- [`examples/HelloLabApi`](examples/HelloLabApi) is the smallest real LabAPI plugin.
+- [`examples/ScriptedWarhead`](examples/ScriptedWarhead/README.md) keeps the DMS/Omega timeline, config choices, localization/fallback, and RA command flow in `.易`. Its narrow bridge handles only MEC/native facility, warhead, player, ffmpeg, and SpeakerToy operations.
+- [`examples/SpinBot`](examples/SpinBot/README.md) keeps configuration, lifecycle, rotation/state math, persistent access, ServerKeybinds API 3 UI, and RA commands in `.易`. Cement's engine-facing C# source is intentionally private and is not included in this public repository.
 
-后两个示例都是“易源码 → C# → net48”的编译/结构验证，目前不宣称已经完成多人游戏内验证，也不假装能用纯易代码表达 SCP:SL 内部机制，更不代表所有官方易语言程序都能不修改直接编译。请阅读 [ScriptedWarhead 验证记录](examples/ScriptedWarhead/VALIDATION.md) 和 [SpinBot 验证记录](examples/SpinBot/VALIDATION.zh-CN.md) 了解准确边界。
+ScriptedWarhead is buildable from this repository with the required server assemblies. SpinBot preserves the complete `.易` side, but its native bridge also requires Cement's seven private source files. See the [ScriptedWarhead verification guide](examples/ScriptedWarhead/VALIDATION.md) and [SpinBot verification guide](examples/SpinBot/VALIDATION.md) for the checks and game-client coverage each example needs.
 
-验证记录目前都通过：ScriptedWarhead 可以只用本仓库内容复现；SpinBot 的完整记录则使用了 Cement 的私有原生边缘源码。该维护者工作区中的 SpinBot 通过了生成 DLL 的 17/17 数学检查和 2 项插件/命令反射检查。公开的 SpinBot 文件夹仍完整保留并讲解 `.易` 一侧，但缺少这些私有文件时不能生成原生桥接 DLL。
+### Read next
 
-### 下一步读什么
+- [A guide for a 10-year-old](docs/KIDS-GUIDE.md)
+- [Language reference](docs/LANGUAGE.md)
+- [Exact compatibility and intentional differences](docs/COMPATIBILITY.md)
+- [Third-party references and notices](THIRD-PARTY-NOTICES.md)
+- [MIT license](LICENSE)
 
-- [写给 10 岁小朋友的指南](docs/KIDS-GUIDE.md)
-- [语言参考](docs/LANGUAGE.md)
-- [准确的兼容范围与有意差异](docs/COMPATIBILITY.md)
-- [第三方参考资料与声明](THIRD-PARTY-NOTICES.md)
-- [MIT 许可证](LICENSE)
-
-双击 `build.cmd` 可以编译整个工具并运行 44 个编译器一致性测试。对应的 PowerShell 测试命令是：
+Double-click `build.cmd` to build the complete tool and run its compiler conformance checks. The equivalent PowerShell test command is:
 
 ```powershell
 dotnet run --project tests/EPLab.Compiler.Tests -c Release

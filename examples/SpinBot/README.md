@@ -1,8 +1,8 @@
 # SpinBot written with EPLab
 
-[Chinese version](README.zh-CN.md) · [Validation record](VALIDATION.md) · [Private native-source boundary](bridge/ReferenceNative/PROVENANCE.md)
+[Verification guide](VALIDATION.md) · [Private native-source boundary](bridge/ReferenceNative/PROVENANCE.md)
 
-This is a real LabAPI port whose everyday logic is written in friendly 易-style source. EPLab translates those `.易` files into readable C#, then the .NET compiler makes a `net48` DLL. Cement has chosen to keep the seven engine-facing C# implementation files private, so a public clone contains the full Easy side and validation record but cannot build the native bridge by itself.
+This is a real LabAPI port whose everyday logic is written in friendly 易-style source. EPLab translates those `.易` files into readable C#, then the .NET compiler makes a `net48` DLL. Cement has chosen to keep the seven engine-facing C# implementation files private, so a public clone contains the full Easy side and verification guide but cannot build the native bridge by itself.
 
 Think of it like a toy made from two boxes:
 
