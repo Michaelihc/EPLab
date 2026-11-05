@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$(SCPSL_METAREPO)\build\scpsl-deps.props" Condition="'$(SCPSL_METAREPO)' != '' And Exists('$(SCPSL_METAREPO)\build\scpsl-deps.props')" />
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
     <OutputType>Library</OutputType>
@@ -7,6 +8,7 @@
     <AssemblyName>SpinBot.EPLab.Bridge</AssemblyName>
     <RootNamespace>SpinBot</RootNamespace>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <HarmonyPath Condition="'$(HarmonyPath)' == ''">$(HARMONY_DLL)</HarmonyPath>
     <SCP_SL_MANAGED Condition="'$(SCP_SL_MANAGED)' == ''">C:\Program Files (x86)\Steam\steamapps\common\SCP Secret Laboratory Dedicated Server\SCPSL_Data\Managed</SCP_SL_MANAGED>
   </PropertyGroup>
 
